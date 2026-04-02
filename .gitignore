@@ -28,10 +28,10 @@ env/
 .env
 
 # Models and Data
-models/*.pkl
-models/*.joblib
-data/*.csv
-data/*.json
+#models/*.pkl
+#models/*.joblib
+#data/*.csv
+#data/*.json
 
 # IDEs
 .vscode/
@@ -40,3 +40,5 @@ data/*.json
 # DeepEval / Monitoring
 .deepeval/
 logs/
+
+

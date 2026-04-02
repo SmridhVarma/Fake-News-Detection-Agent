@@ -18,6 +18,9 @@ joblib
 # Evaluation
 deepeval
 
+# Data Ingestion
+newsapi-python
+
 # Utilities
 tqdm
 requests
