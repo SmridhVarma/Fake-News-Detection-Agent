@@ -80,3 +80,8 @@ cp .env.example .env
 # 5. Run the app
 python main.py
 ```
+
+### Data Source
+```
+https://www.kaggle.com/datasets/clmentbisaillon/fake-and-real-news-dataset?resource=download
+```
