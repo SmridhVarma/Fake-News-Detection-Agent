@@ -1,0 +1,24 @@
+# Core
+langgraph
+langchain
+langchain-openai
+openai
+python-dotenv
+pydantic
+
+# UI
+gradio
+
+# ML
+scikit-learn
+pandas
+numpy
+joblib
+
+# Evaluation
+deepeval
+
+# Utilities
+tqdm
+requests
+beautifulsoup4
