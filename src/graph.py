@@ -38,19 +38,46 @@ graph = builder.compile()
 
 
 # ── Public entry point ───────────────────────────────────────
-def run_agent(article_text: str) -> dict:
-    """Run the full detection pipeline on an article."""
+def run_agent(user_input: str, input_type: str = "text") -> dict:
+    """Run the full detection pipeline on an article.
+
+    Args:
+        user_input: Raw text, URL, or file path from the user.
+        input_type: One of "text", "url", or "file".
+    """
     initial_state: AgentState = {
-        "article_text": article_text,
+        # Raw input
+        "input_type": input_type,
+        "raw_input": user_input,
+        # Preprocessing (set by ingestion node)
+        "article_title": None,
+        "article_text": "",
+        "source_domain": None,
+        "word_count": 0,
+        # Style signals (set by style_check)
+        "caps_ratio": None,
+        "exclamation_count": None,
+        "amplifier_word_count": None,
+        "style_score": None,
+        # Source credibility
+        "source_credibility": None,
+        # Phase 1: ML
         "ml_score": 0.0,
         "ml_label": "",
+        # Phase 2: LLM
         "llm_score": 0.0,
         "llm_label": "",
         "llm_reasoning": "",
+        # Evaluation
+        "eval_agreement": None,
+        "eval_confidence_delta": None,
         "eval_score": 0.0,
+        # Final output
         "final_label": "",
         "final_score": 0.0,
+        "explanation": "",
         "summary": "",
+        # Flags
         "model_trained": False,
     }
     return graph.invoke(initial_state)
