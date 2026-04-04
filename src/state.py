@@ -23,21 +23,24 @@ class AgentState(TypedDict):
 
     # ── Style signals (set by style_check) ─────────────────────
     caps_ratio: Optional[float]                  # fraction of ALL-CAPS words
-    exclamation_count: Optional[int]             # number of '!' in text
-    amplifier_word_count: Optional[int]          # count of sensationalist words
+    #exclamation_count: Optional[int]             # number of '!' in text
+    #amplifier_word_count: Optional[int]          # count of sensationalist words
     style_score: Optional[float]                 # composite style suspicion score [0-1]
+    mean_subjectivity: Optional[float]
+    lexical_density: Optional[float]
+    has_dateline: Optional[bool]
 
     # ── Source credibility (set by source_score) ───────────────
-    source_credibility: Optional[float]          # domain credibility lookup score [0-1]
+    #source_credibility: Optional[float]          # domain credibility lookup score [0-1]
 
     # ── Phase 1: ML classifier ─────────────────────────────────
-    ml_score: float                              # model confidence [0-1]
-    ml_label: str                                # "FAKE" or "REAL"
+    ml_score: Optional[float]=None                              # model confidence [0-1]
+    ml_label: Optional[str]=None                                # "FAKE" or "REAL"
 
     # ── Phase 2: LLM classifier ────────────────────────────────
-    llm_score: float                             # LLM confidence [0-1]
-    llm_label: str                               # "FAKE" or "REAL"
-    llm_reasoning: str                           # free-text rationale from LLM
+    llm_score: Optional[float]=None                             # LLM confidence [0-1]
+    llm_label: Optional[str]=None                               # "FAKE" or "REAL"
+    llm_reasoning: Optional[str]=None                           # free-text rationale from LLM
 
     # ── Evaluation (model vs LLM comparison) ───────────────────
     eval_agreement: Optional[bool]               # True if ml_label == llm_label
