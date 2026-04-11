@@ -18,11 +18,11 @@ def ingestion_node(state: AgentState) -> dict:
     
     # 3. Call the Skill from the skills directory
     # Run features on the LLM text so casing/punctuation is preserved for stylistic checks!
-    features = calculate_article_scores(cleaned_llm)
+    features = calculate_article_scores(raw_text) #Changed from cleaned_ml to raw_text so that stylistic features are more accurate (based on original text, as cleaning might remove important stylistic cues)
     
     # 4. Return the updates to the AgentState
     return {
-        "article_text": cleaned_llm,               # legacy mapping defaults to LLM version
+        "article_text": raw_text,               # legacy mapping defaults to LLM version
         "article_text_llm": cleaned_llm,           # Explicit transformer-ready text
         "article_text_ml": cleaned_ml,             # Explicit traditional ML text
         "word_count": len(cleaned_ml.split()),     # ML word count is more statistically pure

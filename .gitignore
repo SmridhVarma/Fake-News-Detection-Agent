@@ -41,4 +41,10 @@ env/
 .deepeval/
 logs/
 
+#Trained Models
+models/
+*.joblib
+__pycache__/
+*.pyc
+.ipynb_checkpoints/
 
