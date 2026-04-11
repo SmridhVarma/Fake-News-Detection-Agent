@@ -1,17 +1,67 @@
 """
 preprocessing.py — Text cleaning helpers.
 
-Example helper pattern:
-  - Pure functions, no state dependency
-  - Called by nodes, never call nodes
+Includes two specific pipelines: one for traditional ML (with lemmatization)
+and one for Transformer/LLMs (minimal destructive cleaning).
 """
 
 import re
+import nltk
+from nltk.corpus import stopwords
+from nltk.stem import WordNetLemmatizer
+from nltk.tokenize import word_tokenize
 
+# Automatically download required NLTK data on import
+try:
+    nltk.data.find('tokenizers/punkt')
+    nltk.data.find('tokenizers/punkt_tab')
+    nltk.data.find('corpora/stopwords')
+    nltk.data.find('corpora/wordnet')
+except LookupError:
+    nltk.download('punkt', quiet=True)
+    nltk.download('punkt_tab', quiet=True)
+    nltk.download('stopwords', quiet=True)
+    nltk.download('wordnet', quiet=True)
+    nltk.download('omw-1.4', quiet=True)
 
-def clean_text(text: str) -> str:
-    """Remove extra whitespace, URLs, and normalize casing."""
-    text = text.strip()
+# Initialize the lemmatizer globally to save time
+lemmatizer = WordNetLemmatizer()
+stop_words = set(stopwords.words('english'))
+
+def strip_reuters_leakage(text: str) -> str:
+    """Removes the highly determinative publisher datelines like '(Reuters) - '."""
+    # Pattern looks for City Name (Agency) -
+    # e.g. "WASHINGTON (Reuters) - " or "NEW YORK (CNN) - "
+    return re.sub(r'^.*?\(.*?\)\s?\-\s?', '', text).strip()
+
+def clean_text_for_transformers(text: str) -> str:
+    """
+    Minimal destructive cleaning suitable for BERT or OpenAI.
+    Preserves casing, punctuation, and stopwords for context.
+    """
+    text = strip_reuters_leakage(text)
     text = re.sub(r"http\S+", "", text)           # strip URLs
-    text = re.sub(r"\s+", " ", text)               # collapse whitespace
-    return text
+    text = re.sub(r"<.*?>", "", text)             # strip HTML
+    text = re.sub(r"\s+", " ", text)              # collapse whitespace
+    return text.strip()
+
+def clean_text_for_traditional_ml(text: str) -> str:
+    """
+    Strict normalization for TF-IDF / Random Forest. 
+    Reduces vocabulary size heavily.
+    """
+    text = clean_text_for_transformers(text)      # base cleaning
+    text = text.lower()                           # lowercase
+    text = re.sub(r"[^\w\s]", "", text)           # strip punctuation/special chars
+    
+    # Tokenize
+    words = word_tokenize(text)
+    
+    # Remove stopwords and lemmatize
+    cleaned_words = [
+        lemmatizer.lemmatize(w) 
+        for w in words 
+        if w not in stop_words and len(w) > 1
+    ]
+    
+    return " ".join(cleaned_words)

@@ -17,7 +17,9 @@ class AgentState(TypedDict):
 
     # ── Preprocessing outputs (set by ingestion node) ──────────
     article_title: Optional[str]                 # extracted or provided title
-    article_text: str                            # cleaned body text ready for downstream
+    article_text: str                            # legacy cleaned body text
+    article_text_ml: str                         # cleaned for traditional ML (lemmatized, lowercased)
+    article_text_llm: str                        # cleaned for LLM / Transformers (preserves context)
     source_domain: Optional[str]                 # domain extracted from URL, if applicable
     word_count: int                              # token-level length of cleaned text
 
