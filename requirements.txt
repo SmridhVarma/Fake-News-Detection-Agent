@@ -25,3 +25,5 @@ newsapi-python
 tqdm
 requests
 beautifulsoup4
+nltk
+textblob
