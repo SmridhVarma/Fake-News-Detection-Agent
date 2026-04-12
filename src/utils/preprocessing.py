@@ -28,18 +28,14 @@ except LookupError:
 lemmatizer = WordNetLemmatizer()
 stop_words = set(stopwords.words('english'))
 
-def strip_reuters_leakage(text: str) -> str:
-    """Removes the highly determinative publisher datelines like '(Reuters) - '."""
-    # Pattern looks for City Name (Agency) -
-    # e.g. "WASHINGTON (Reuters) - " or "NEW YORK (CNN) - "
-    return re.sub(r'^.*?\(.*?\)\s?\-\s?', '', text).strip()
+from src.utils.preprocessing_tools import strip_publisher_patterns
 
 def clean_text_for_transformers(text: str) -> str:
     """
     Minimal destructive cleaning suitable for BERT or OpenAI.
     Preserves casing, punctuation, and stopwords for context.
     """
-    text = strip_reuters_leakage(text)
+    text = strip_publisher_patterns(text)
     text = re.sub(r"http\S+", "", text)           # strip URLs
     text = re.sub(r"<.*?>", "", text)             # strip HTML
     text = re.sub(r"\s+", " ", text)              # collapse whitespace

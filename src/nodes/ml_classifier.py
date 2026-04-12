@@ -19,7 +19,7 @@ from src.utils.preprocessing import (
     clean_text_for_transformers,
     clean_text_for_traditional_ml,
 )
-from skills.calculate_features import calculate_article_scores
+from src.utils.ingestion_tools import calculate_article_scores
 
 
 def _label_from_score(score: float) -> str:
