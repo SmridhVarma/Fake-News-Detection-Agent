@@ -52,6 +52,7 @@ You have access to several tools. You MUST follow these workflows:
 
 {load_skill('analysis')}
 {load_skill('verification')}
+{load_skill('explanation')}
 
 After using the tools to gather sufficient evidence, output your final classification wrapped in a JSON block exactly like this:
 ```json
