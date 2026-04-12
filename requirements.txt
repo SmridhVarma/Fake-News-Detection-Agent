@@ -37,3 +37,6 @@ protobuf
 sentencepiece
 tiktoken
 tokenizers
+
+#Visualisation
+matplotlib
