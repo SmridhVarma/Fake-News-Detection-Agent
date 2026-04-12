@@ -1,5 +1,4 @@
 import os
-import json
 import shutil
 import numpy as np
 import pandas as pd
@@ -125,8 +124,7 @@ def train_traditional_models(X_train_final, X_test_final, y_train, y_test, rando
             random_state=random_state,
         ),
 
-        # Linear SVM is the better SVM variant for sparse TF-IDF text.
-        # CalibratedClassifierCV gives probability estimates for ROC-AUC.
+        # Better practical SVM choice for sparse TF-IDF text
         "svm": CalibratedClassifierCV(
             estimator=LinearSVC(
                 random_state=random_state,
@@ -165,7 +163,6 @@ def train_traditional_models(X_train_final, X_test_final, y_train, y_test, rando
         if hasattr(model, "predict_proba"):
             y_score = model.predict_proba(X_test_final)[:, 1]
         else:
-            # Fallback if ever needed
             y_score = model.decision_function(X_test_final)
 
         metrics = compute_metrics(y_test, y_pred, y_score)
@@ -204,7 +201,7 @@ def train_transformer_model(
 ):
     ensure_clean_dir(output_dir)
 
-    tokenizer = AutoTokenizer.from_pretrained(model_name)
+    tokenizer = AutoTokenizer.from_pretrained(model_name, use_fast=False)
 
     train_texts = train_df["text_llm"].fillna("").tolist()
     test_texts = test_df["text_llm"].fillna("").tolist()
@@ -216,13 +213,13 @@ def train_transformer_model(
         train_texts,
         truncation=True,
         padding=True,
-        max_length=512,
+        max_length=128,
     )
     test_encodings = tokenizer(
         test_texts,
         truncation=True,
         padding=True,
-        max_length=512,
+        max_length=128,
     )
 
     train_dataset = NewsDataset(train_encodings, y_train)
@@ -233,21 +230,14 @@ def train_transformer_model(
         num_labels=2
     )
 
+    # Compatibility-friendly TrainingArguments for older transformers versions
     training_args = TrainingArguments(
         output_dir=output_dir,
-        overwrite_output_dir=True,
         num_train_epochs=epochs,
         per_device_train_batch_size=batch_size,
         per_device_eval_batch_size=batch_size,
         learning_rate=learning_rate,
-        evaluation_strategy="epoch",
-        save_strategy="epoch",
-        logging_strategy="epoch",
-        load_best_model_at_end=True,
-        metric_for_best_model="f1",
-        greater_is_better=True,
-        report_to="none",
-        save_total_limit=1,
+        load_best_model_at_end=False,
     )
 
     def transformer_metrics(eval_pred):
@@ -312,8 +302,8 @@ def training_node(state: AgentState) -> dict:
     """
 
     preprocess_artifact_path = state.get(
-    "preprocessing_artifact_path",
-    "./models/preprocessing_artifacts.joblib"
+        "preprocessing_artifact_path",
+        "./models/preprocessing_artifacts.joblib"
     )
     artifacts = load_artifacts(preprocess_artifact_path)
 
@@ -389,7 +379,6 @@ def training_node(state: AgentState) -> dict:
     best_metrics = all_results[best_model_name]
     best_model_path = saved_model_paths[best_model_name]
 
-    # Save shared artifacts needed later
     training_bundle = {
         "train_df": train_df,
         "test_df": test_df,
@@ -405,8 +394,8 @@ def training_node(state: AgentState) -> dict:
     }
 
     final_artifact_path = save_artifacts(
-    training_bundle,
-    path="./models/training_artifacts.joblib"
+        training_bundle,
+        path="./models/training_artifacts.joblib"
     )
 
     return {

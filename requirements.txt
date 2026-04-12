@@ -17,6 +17,7 @@ joblib
 scipy
 transformers
 torch
+accelerate>=1.1.0
 
 # Evaluation
 deepeval
@@ -30,3 +31,9 @@ requests
 beautifulsoup4
 nltk
 textblob
+
+#Others
+protobuf
+sentencepiece
+tiktoken
+tokenizers
