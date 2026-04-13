@@ -135,7 +135,8 @@ def run_pipeline_test(label, state):
     state.update(out)
     print(f"  Label      : {state.get('llm_label')}")
     print(f"  Confidence : {state.get('llm_score')}")
-    print(f"  Reasoning  : {state.get('llm_reasoning', '')[:120]}...")
+    # print(f"  Reasoning  : {state.get('llm_reasoning', '')[:120]}...")
+    print(f"  Reasoning  : {state.get('llm_reasoning', '')}")
     print(f"  [{time.time()-t0:.2f}s]")
 
     # DeepEval
