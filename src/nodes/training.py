@@ -178,7 +178,7 @@ def training_node(state: AgentState) -> dict:
     print("\n>>> [NODE] Starting Training Node...")
     
     # Check for v2 artifacts to skip retraining
-    v2_training_artifact_path = "./v2/training_artifacts.joblib"
+    v2_training_artifact_path = "./models/v2/training_artifacts.joblib"
     if os.path.exists(v2_training_artifact_path):
         print(f">>> [LOG] v2 training artifacts found at {v2_training_artifact_path}. Skipping model fitting.")
         v2_artifacts = load_artifacts(v2_training_artifact_path)

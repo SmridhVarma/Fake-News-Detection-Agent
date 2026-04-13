@@ -24,7 +24,7 @@ def preprocess_data_node(state: AgentState) -> dict:
     print("\n>>> [NODE] Starting Preprocess Data Node...")
     
     # Check for v2 artifacts to skip retraining
-    v2_artifact_path = "./v2/preprocessing_artifacts.joblib"
+    v2_artifact_path = "./models/v2/preprocessing_artifacts.joblib"
     if os.path.exists(v2_artifact_path):
         print(f">>> [LOG] v2 preprocessing artifacts found at {v2_artifact_path}. Skipping processing.")
         print(">>> [NODE] Finished Preprocess Data Node.")

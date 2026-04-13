@@ -94,7 +94,7 @@ def ml_classifier_node(state: AgentState) -> dict:
 
     # Fallback to v2 if models/training_artifacts.joblib doesn't exist
     if not os.path.exists(artifact_path) or "v2" in artifact_path:
-         v2_path = "./v2/training_artifacts.joblib"
+         v2_path = "./models/v2/training_artifacts.joblib"
          if os.path.exists(v2_path):
              artifact_path = v2_path
 

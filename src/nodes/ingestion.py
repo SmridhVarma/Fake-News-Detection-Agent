@@ -17,6 +17,11 @@ def ingestion_node(state: AgentState) -> dict:
     
     if input_type == "url":
         raw_text = fetch_article_from_url(raw_input)
+        if not raw_text or len(raw_text.strip()) < 80:
+            raise ValueError(
+                "Could not extract enough article text from the URL. "
+                "Try pasting the article text directly if the site blocks scraping."
+            )
     else:
         raw_text = raw_input
     
@@ -28,7 +33,7 @@ def ingestion_node(state: AgentState) -> dict:
     features = calculate_article_scores(raw_text) #Changed from cleaned_ml to raw_text so that stylistic features are more accurate (based on original text, as cleaning might remove important stylistic cues)
     
     # 4. Run sentiment analysis skill
-    sentiment = analyze_sentiment(raw_text)
+    _ = analyze_sentiment(raw_text)
     
     # 5. Check source credibility if URL was provided
     source_domain = None
