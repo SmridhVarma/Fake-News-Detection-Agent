@@ -35,6 +35,7 @@ def load_skill(name: str) -> str:
 
 def llm_classifier_node(state: AgentState) -> dict:
     """Uses a ReACT Agent to autonomously gather external context before classifying."""
+    print("\n>>> [NODE] Starting LLM Classifier Node...")
     article_text = state.get("article_text", "")
     
     if not article_text or len(article_text.strip()) < 50:
@@ -75,22 +76,28 @@ After using the tools to gather sufficient evidence, output your final classific
         match = re.search(r'```json\s*(\{.*?\})\s*```', final_text, re.DOTALL)
         if match:
             data = json.loads(match.group(1))
-            return {
+            result = {
                 "llm_score": float(data.get("confidence", 0.5)),
                 "llm_label": data.get("label", "FAKE").upper(),
                 "llm_reasoning": data.get("reasoning", final_text)
             }
+            print(">>> [NODE] Finished LLM Classifier Node.")
+            return result
         else:
-            return {
+            result = {
                 "llm_score": 0.5,
                 "llm_label": "UNKNOWN",
                 "llm_reasoning": "Failed to parse final JSON output. Raw output:\n" + final_text
             }
+            print(">>> [NODE] Finished LLM Classifier Node.")
+            return result
             
     except Exception as e:
         print(f"Error during LLM classification: {e}")
-        return {
+        result = {
             "llm_score": 0.5,
             "llm_label": "FAKE",
             "llm_reasoning": f"Failed to perform LLM analysis: {str(e)}"
         }
+        print(">>> [NODE] Finished LLM Classifier Node.")
+        return result

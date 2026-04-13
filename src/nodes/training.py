@@ -29,17 +29,6 @@ from src.utils.training_artifacts import (
     save_model,
 )
 
-# Transformer imports
-import torch
-from torch.utils.data import Dataset
-
-from transformers import (
-    AutoTokenizer,
-    AutoModelForSequenceClassification,
-    Trainer,
-    TrainingArguments,
-)
-
 
 # =========================
 # Utility helpers
@@ -173,133 +162,38 @@ def train_traditional_models(X_train_final, X_test_final, y_train, y_test, rando
 
 
 # =========================
-# Transformer training
-# =========================
-
-class NewsDataset(Dataset):
-    def __init__(self, encodings, labels):
-        self.encodings = encodings
-        self.labels = list(labels)
-
-    def __len__(self):
-        return len(self.labels)
-
-    def __getitem__(self, idx):
-        item = {k: torch.tensor(v[idx]) for k, v in self.encodings.items()}
-        item["labels"] = torch.tensor(self.labels[idx], dtype=torch.long)
-        return item
-
-
-def train_transformer_model(
-    train_df: pd.DataFrame,
-    test_df: pd.DataFrame,
-    model_name: str = "distilbert-base-uncased",
-    output_dir: str = "./models/transformer_fake_news",
-    epochs: int = 2,
-    batch_size: int = 8,
-    learning_rate: float = 2e-5,
-):
-    ensure_clean_dir(output_dir)
-
-    tokenizer = AutoTokenizer.from_pretrained(model_name, use_fast=False)
-
-    train_texts = train_df["text_llm"].fillna("").tolist()
-    test_texts = test_df["text_llm"].fillna("").tolist()
-
-    y_train = train_df["label"].astype(int).tolist()
-    y_test = test_df["label"].astype(int).tolist()
-
-    train_encodings = tokenizer(
-        train_texts,
-        truncation=True,
-        padding=True,
-        max_length=128,
-    )
-    test_encodings = tokenizer(
-        test_texts,
-        truncation=True,
-        padding=True,
-        max_length=128,
-    )
-
-    train_dataset = NewsDataset(train_encodings, y_train)
-    test_dataset = NewsDataset(test_encodings, y_test)
-
-    model = AutoModelForSequenceClassification.from_pretrained(
-        model_name,
-        num_labels=2
-    )
-
-    # Compatibility-friendly TrainingArguments for older transformers versions
-    training_args = TrainingArguments(
-        output_dir=output_dir,
-        num_train_epochs=epochs,
-        per_device_train_batch_size=batch_size,
-        per_device_eval_batch_size=batch_size,
-        learning_rate=learning_rate,
-        load_best_model_at_end=False,
-    )
-
-    def transformer_metrics(eval_pred):
-        logits, labels = eval_pred
-        probs = torch.softmax(torch.tensor(logits), dim=1).numpy()[:, 1]
-        preds = np.argmax(logits, axis=1)
-
-        return {
-            "accuracy": accuracy_score(labels, preds),
-            "precision": precision_score(labels, preds, zero_division=0),
-            "recall": recall_score(labels, preds, zero_division=0),
-            "f1": f1_score(labels, preds, zero_division=0),
-            "auc_roc": roc_auc_score(labels, probs),
-        }
-
-    trainer = Trainer(
-        model=model,
-        args=training_args,
-        train_dataset=train_dataset,
-        eval_dataset=test_dataset,
-        compute_metrics=transformer_metrics,
-    )
-
-    trainer.train()
-
-    pred_output = trainer.predict(test_dataset)
-    logits = pred_output.predictions
-    probs = torch.softmax(torch.tensor(logits), dim=1).numpy()[:, 1]
-    preds = np.argmax(logits, axis=1)
-
-    metrics = compute_metrics(np.array(y_test), preds, probs)
-
-    # Save tokenizer + model
-    trainer.save_model(output_dir)
-    tokenizer.save_pretrained(output_dir)
-
-    return {
-        "metrics": metrics,
-        "model_dir": output_dir,
-        "transformer_model_name": model_name,
-    }
-
-
-# =========================
 # Main training node
 # =========================
 
 def training_node(state: AgentState) -> dict:
     """
-    Train and compare:
+    Train and compare traditional ML models:
     - Logistic Regression
     - SVM (linear SVM with calibration)
     - Random Forest
     - Neural Network (MLP)
-    - Transformer (DistilBERT by default)
 
-    Traditional models use:
+    Models use:
     TF-IDF(text_ml) + handcrafted numeric features
-
-    Transformer uses:
-    text_llm only
     """
+    print("\n>>> [NODE] Starting Training Node...")
+    
+    # Check for v2 artifacts to skip retraining
+    v2_training_artifact_path = "./v2/training_artifacts.joblib"
+    if os.path.exists(v2_training_artifact_path):
+        print(f">>> [LOG] v2 training artifacts found at {v2_training_artifact_path}. Skipping model fitting.")
+        v2_artifacts = load_artifacts(v2_training_artifact_path)
+        if v2_artifacts:
+            print(">>> [NODE] Finished Training Node.")
+            return {
+                "model_trained": True,
+                "model_path": v2_artifacts.get("selected_model_path"),
+                "training_artifact_path": v2_training_artifact_path,
+                "candidate_results": v2_artifacts.get("candidate_results"),
+                "selected_model_name": v2_artifacts.get("selected_model_name"),
+                "selected_model_metrics": v2_artifacts.get("selected_model_metrics"),
+                "saved_model_paths": v2_artifacts.get("saved_model_paths"),
+            }
 
     preprocess_artifact_path = state.get(
         "preprocessing_artifact_path",
@@ -314,12 +208,6 @@ def training_node(state: AgentState) -> dict:
     test_df = artifacts["test_df"]
     numeric_feature_cols = artifacts["numeric_feature_cols"]
     random_state = artifacts.get("random_state", 42)
-
-    include_transformer = state.get("include_transformer", True)
-    transformer_model_name = state.get("transformer_model_name", "distilbert-base-uncased")
-    transformer_epochs = state.get("transformer_epochs", 2)
-    transformer_batch_size = state.get("transformer_batch_size", 8)
-    transformer_learning_rate = state.get("transformer_learning_rate", 2e-5)
 
     # =========================
     # Traditional models
@@ -354,25 +242,6 @@ def training_node(state: AgentState) -> dict:
         saved_model_paths[model_name] = model_path
 
     # =========================
-    # Transformer
-    # =========================
-    transformer_info = None
-
-    if include_transformer:
-        transformer_info = train_transformer_model(
-            train_df=train_df,
-            test_df=test_df,
-            model_name=transformer_model_name,
-            output_dir="./models/transformer_fake_news",
-            epochs=transformer_epochs,
-            batch_size=transformer_batch_size,
-            learning_rate=transformer_learning_rate,
-        )
-
-        all_results["transformer"] = transformer_info["metrics"]
-        saved_model_paths["transformer"] = transformer_info["model_dir"]
-
-    # =========================
     # Select winner
     # =========================
     best_model_name = select_best_model(all_results)
@@ -390,7 +259,6 @@ def training_node(state: AgentState) -> dict:
         "selected_model_metrics": best_metrics,
         "selected_model_path": best_model_path,
         "saved_model_paths": saved_model_paths,
-        "transformer_model_name": transformer_model_name if include_transformer else None,
     }
 
     final_artifact_path = save_artifacts(
@@ -398,7 +266,7 @@ def training_node(state: AgentState) -> dict:
         path="./models/training_artifacts.joblib"
     )
 
-    return {
+    result = {
         "model_trained": True,
         "model_path": best_model_path,
         "training_artifact_path": final_artifact_path,
@@ -407,3 +275,5 @@ def training_node(state: AgentState) -> dict:
         "selected_model_metrics": best_metrics,
         "saved_model_paths": saved_model_paths,
     }
+    print(">>> [NODE] Finished Training Node.")
+    return result

@@ -8,6 +8,7 @@ from src.state import AgentState
 
 def aggregator_node(state: AgentState) -> dict:
     """Aggregate both phase scores and produce a final summary."""
+    print("\n>>> [NODE] Starting Aggregator Node...")
     ml_score = state.get("ml_score", 0.0)
     llm_score = state.get("llm_score", 0.0)
     ml_label = state.get("ml_label", "UNKNOWN").upper()
@@ -43,7 +44,7 @@ def aggregator_node(state: AgentState) -> dict:
 {state.get("llm_reasoning", "No reasoning provided.")}
 """
 
-    return {
+    result = {
         "final_label": final_label,
         "final_score": final_score,
         "summary": summary,
@@ -51,3 +52,5 @@ def aggregator_node(state: AgentState) -> dict:
         "eval_agreement": eval_agreement,
         "eval_confidence_delta": eval_confidence_delta
     }
+    print(">>> [NODE] Finished Aggregator Node.")
+    return result

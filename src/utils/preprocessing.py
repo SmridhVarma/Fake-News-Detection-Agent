@@ -1,8 +1,8 @@
 """
 preprocessing.py — Text cleaning helpers.
 
-Includes two specific pipelines: one for traditional ML (with lemmatization)
-and one for Transformer/LLMs (minimal destructive cleaning).
+Strict normalization for TF-IDF / Random Forest / traditional models.
+Reduces vocabulary size heavily.
 """
 
 import re
@@ -10,6 +10,7 @@ import nltk
 from nltk.corpus import stopwords
 from nltk.stem import WordNetLemmatizer
 from nltk.tokenize import word_tokenize
+from src.utils.preprocessing_tools import strip_publisher_patterns
 
 # Automatically download required NLTK data on import
 try:
@@ -28,25 +29,19 @@ except LookupError:
 lemmatizer = WordNetLemmatizer()
 stop_words = set(stopwords.words('english'))
 
-from src.utils.preprocessing_tools import strip_publisher_patterns
-
-def clean_text_for_transformers(text: str) -> str:
-    """
-    Minimal destructive cleaning suitable for BERT or OpenAI.
-    Preserves casing, punctuation, and stopwords for context.
-    """
-    text = strip_publisher_patterns(text)
-    text = re.sub(r"http\S+", "", text)           # strip URLs
-    text = re.sub(r"<.*?>", "", text)             # strip HTML
-    text = re.sub(r"\s+", " ", text)              # collapse whitespace
-    return text.strip()
-
-def clean_text_for_traditional_ml(text: str) -> str:
+def clean_text(text: str) -> str:
     """
     Strict normalization for TF-IDF / Random Forest. 
     Reduces vocabulary size heavily.
     """
-    text = clean_text_for_transformers(text)      # base cleaning
+    # 1. Base clean
+    text = strip_publisher_patterns(text)
+    text = re.sub(r"http\S+", "", text)           # strip URLs
+    text = re.sub(r"<.*?>", "", text)             # strip HTML
+    text = re.sub(r"\s+", " ", text)              # collapse whitespace
+    text = text.strip()
+
+    # 2. ML normalization
     text = text.lower()                           # lowercase
     text = re.sub(r"[^\w\s]", "", text)           # strip punctuation/special chars
     
@@ -61,3 +56,4 @@ def clean_text_for_traditional_ml(text: str) -> str:
     ]
     
     return " ".join(cleaned_words)
+

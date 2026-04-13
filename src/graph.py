@@ -64,20 +64,13 @@ def run_agent(user_input: str, input_type: str = "text") -> dict:
         "preprocessing_artifact_path": "./models/preprocessing_artifacts.joblib",
         "training_artifact_path": "./models/training_artifacts.joblib",
 
-        # Optional transformer training config
-        "include_transformer": True,
-        "transformer_model_name": "distilbert-base-uncased",
-        "transformer_epochs": 2,
-        "transformer_batch_size": 8,
-        "transformer_learning_rate": 2e-5,
-
         # Preprocessing / ingestion outputs
         "article_title": None,
         "article_text": "",
         "article_text_ml": "",
-        "article_text_llm": "",
         "source_domain": None,
         "word_count": 0,
+
 
         # Handcrafted / style features
         "caps_ratio": None,

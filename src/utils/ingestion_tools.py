@@ -26,7 +26,8 @@ def fetch_article_from_url(url: str) -> str:
 
         main_content = soup.find('article')
         if not main_content:
-            for selector in ['main', '[role="main"]', '#content', '#main-content', '.article-body', '.story-body']:
+            # Added more common news selectors (e.g., for Times of India, CNN, etc.)
+            for selector in ['main', '[role="main"]', '#content', '#main-content', '.article-body', '.story-body', '.story-details', '.article_content', '.article_body']:
                 main_content = soup.select_one(selector)
                 if main_content: break
         if not main_content: main_content = soup.body

@@ -21,17 +21,11 @@ class AgentState(TypedDict, total=False):
     test_size: float
     random_state: int
 
-    include_transformer: bool
-    transformer_model_name: str
-    transformer_epochs: int
-    transformer_batch_size: int
-    transformer_learning_rate: float
 
     # ── Preprocessing outputs (set by ingestion node) ──────────
     article_title: Optional[str]                  # extracted or provided title
     article_text: str                             # legacy cleaned body text
     article_text_ml: str                          # cleaned for traditional ML
-    article_text_llm: str                         # cleaned for LLM / Transformers
     source_domain: Optional[str]                  # domain extracted from URL, if applicable
     word_count: int                               # token-level length of cleaned text
 

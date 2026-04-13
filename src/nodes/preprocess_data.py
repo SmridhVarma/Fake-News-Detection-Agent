@@ -1,10 +1,10 @@
 import pandas as pd
+import os
 from sklearn.model_selection import train_test_split
 
 from src.state import AgentState
 from src.utils.preprocessing import (
-    clean_text_for_transformers,
-    clean_text_for_traditional_ml,
+    clean_text,
 )
 from src.utils.ingestion_tools import calculate_article_scores
 from src.utils.training_artifacts import save_artifacts
@@ -22,6 +22,16 @@ def preprocess_data_node(state: AgentState) -> dict:
     Loads Fake.csv / True.csv, labels, combines, cleans, engineers features,
     and creates train/test splits.
     """
+    print("\n>>> [NODE] Starting Preprocess Data Node...")
+    
+    # Check for v2 artifacts to skip retraining
+    v2_artifact_path = "./v2/preprocessing_artifacts.joblib"
+    if os.path.exists(v2_artifact_path):
+        print(f">>> [LOG] v2 preprocessing artifacts found at {v2_artifact_path}. Skipping processing.")
+        print(">>> [NODE] Finished Preprocess Data Node.")
+        return {
+            "preprocessing_artifact_path": v2_artifact_path,
+        }
 
     fake_path = state.get("fake_csv_path", "./data/Fake.csv")
     true_path = state.get("true_csv_path", "./data/True.csv")
@@ -49,8 +59,7 @@ def preprocess_data_node(state: AgentState) -> dict:
     df = df.drop_duplicates(subset=["raw_text"]).reset_index(drop=True)
 
     # 6. Create cleaned text columns
-    df["text_llm"] = df["raw_text"].apply(clean_text_for_transformers)
-    df["text_ml"] = df["raw_text"].apply(clean_text_for_traditional_ml)
+    df["text_ml"] = df["raw_text"].apply(clean_text)
 
     # 7. Handcrafted style / tone features from original/raw text
     feature_dicts = df["raw_text"].apply(calculate_article_scores)
@@ -94,10 +103,12 @@ def preprocess_data_node(state: AgentState) -> dict:
         path="./models/preprocessing_artifacts.joblib"
     )
 
-    return {
+    result = {
         "preprocessed_rows": len(df),
         "train_rows": len(train_df),
         "test_rows": len(test_df),
         "numeric_feature_cols": numeric_feature_cols,
         "preprocessing_artifact_path": artifact_path,
     }
+    print(">>> [NODE] Finished Preprocess Data Node.")
+    return result

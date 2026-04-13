@@ -48,3 +48,9 @@ __pycache__/
 *.pyc
 .ipynb_checkpoints/
 
+# Test scripts and reports
+verify_pipeline_flow.py
+analyze_url.py
+pipeline_test_report.txt
+pipeline_test_results.txt
+
