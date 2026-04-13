@@ -1,5 +1,7 @@
 import os
+import shutil
 import numpy as np
+import pandas as pd
 
 from scipy.sparse import hstack, csr_matrix
 
@@ -28,6 +30,10 @@ from src.utils.training_artifacts import (
 )
 
 
+# =========================
+# Utility helpers
+# =========================
+
 def compute_metrics(y_true, y_pred, y_score) -> dict:
     return {
         "accuracy": round(accuracy_score(y_true, y_pred), 4),
@@ -38,6 +44,12 @@ def compute_metrics(y_true, y_pred, y_score) -> dict:
     }
 
 
+def ensure_clean_dir(path: str):
+    if os.path.exists(path):
+        shutil.rmtree(path)
+    os.makedirs(path, exist_ok=True)
+
+
 def select_best_model(results: dict) -> str:
     return sorted(
         results.keys(),
@@ -45,6 +57,10 @@ def select_best_model(results: dict) -> str:
         reverse=True
     )[0]
 
+
+# =========================
+# Traditional ML preparation
+# =========================
 
 def build_traditional_feature_matrices(train_df, val_df, test_df, numeric_feature_cols):
     X_text_train = train_df["text_ml"]
@@ -129,6 +145,7 @@ def train_traditional_models(X_train_final, X_val_final, X_test_final, y_train, 
     for model_name, model in candidates.items():
         model.fit(X_train_final, y_train)
 
+        # Validation set evaluation
         y_val_pred = model.predict(X_val_final)
         if hasattr(model, "predict_proba"):
             y_val_score = model.predict_proba(X_val_final)[:, 1]
@@ -136,6 +153,7 @@ def train_traditional_models(X_train_final, X_val_final, X_test_final, y_train, 
             y_val_score = model.decision_function(X_val_final)
         candidate_validation_results[model_name] = compute_metrics(y_val, y_val_pred, y_val_score)
 
+        # Test set evaluation
         y_test_pred = model.predict(X_test_final)
         if hasattr(model, "predict_proba"):
             y_test_score = model.predict_proba(X_test_final)[:, 1]
@@ -148,7 +166,38 @@ def train_traditional_models(X_train_final, X_val_final, X_test_final, y_train, 
     return candidate_validation_results, candidate_test_results, trained_models
 
 
+# =========================
+# Main training node
+# =========================
+
 def training_node(state: AgentState) -> dict:
+    """
+    Train and compare traditional ML models using TF-IDF + Handcrafted features.
+    Integrates upstream validation split support with local diagnostic logs and v2 bypass.
+    """
+    print("\n>>> [NODE] Starting Training Node...")
+    
+    # Check for v2 artifacts to skip retraining
+    v2_training_artifact_path = "./v2/training_artifacts.joblib"
+    if os.path.exists(v2_training_artifact_path):
+        print(f">>> [LOG] v2 training artifacts found at {v2_training_artifact_path}. Skipping model fitting.")
+        v2_artifacts = load_artifacts(v2_training_artifact_path)
+        if v2_artifacts:
+            print(">>> [NODE] Finished Training Node.")
+            return {
+                "model_trained": True,
+                "model_path": v2_artifacts.get("selected_model_path"),
+                "training_artifact_path": v2_training_artifact_path,
+                "candidate_validation_results": v2_artifacts.get("candidate_validation_results"),
+                "candidate_test_results": v2_artifacts.get("candidate_test_results"),
+                "candidate_results": v2_artifacts.get("candidate_results"),
+                "selected_model_name": v2_artifacts.get("selected_model_name"),
+                "selected_model_validation_metrics": v2_artifacts.get("selected_model_validation_metrics"),
+                "selected_model_test_metrics": v2_artifacts.get("selected_model_test_metrics"),
+                "selected_model_metrics": v2_artifacts.get("selected_model_metrics"),
+                "saved_model_paths": v2_artifacts.get("saved_model_paths"),
+            }
+
     preprocess_artifact_path = state.get(
         "preprocessing_artifact_path",
         "./models/v1/preprocessing_artifacts.joblib"
@@ -175,6 +224,9 @@ def training_node(state: AgentState) -> dict:
     numeric_feature_cols = artifacts["numeric_feature_cols"]
     random_state = artifacts.get("random_state", 42)
 
+    # =========================
+    # Traditional models
+    # =========================
     traditional_bundle = build_traditional_feature_matrices(
         train_df=train_df,
         val_df=val_df,
@@ -207,6 +259,9 @@ def training_node(state: AgentState) -> dict:
         model_path = save_model(model, path=f"{model_dir}/{model_name}.joblib")
         saved_model_paths[model_name] = model_path
 
+    # =========================
+    # Select winner based on validation performance
+    # =========================
     best_model_name = select_best_model(candidate_validation_results)
     best_validation_metrics = candidate_validation_results[best_model_name]
     best_test_metrics = candidate_test_results[best_model_name]
@@ -236,7 +291,7 @@ def training_node(state: AgentState) -> dict:
         path=training_artifact_path
     )
 
-    return {
+    result = {
         "model_trained": True,
         "model_path": best_model_path,
         "training_artifact_path": final_artifact_path,
@@ -249,3 +304,5 @@ def training_node(state: AgentState) -> dict:
         "selected_model_metrics": best_test_metrics,
         "saved_model_paths": saved_model_paths,
     }
+    print(">>> [NODE] Finished Training Node.")
+    return result

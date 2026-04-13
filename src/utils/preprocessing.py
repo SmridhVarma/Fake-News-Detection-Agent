@@ -10,6 +10,7 @@ import nltk
 from nltk.corpus import stopwords
 from nltk.stem import WordNetLemmatizer
 from nltk.tokenize import word_tokenize
+from src.utils.preprocessing_tools import strip_publisher_patterns
 
 # Automatically download required NLTK data on import
 try:
@@ -28,7 +29,6 @@ except LookupError:
 lemmatizer = WordNetLemmatizer()
 stop_words = set(stopwords.words('english'))
 
-from src.utils.preprocessing_tools import strip_publisher_patterns
 
 def clean_text_for_transformers(text: str) -> str:
     """
@@ -40,6 +40,7 @@ def clean_text_for_transformers(text: str) -> str:
     text = re.sub(r"<.*?>", "", text)             # strip HTML
     text = re.sub(r"\s+", " ", text)              # collapse whitespace
     return text.strip()
+
 
 def clean_text_for_traditional_ml(text: str) -> str:
     """
@@ -61,3 +62,8 @@ def clean_text_for_traditional_ml(text: str) -> str:
     ]
     
     return " ".join(cleaned_words)
+
+
+def clean_text(text: str) -> str:
+    """Legacy wrapper for backward compatibility."""
+    return clean_text_for_traditional_ml(text)

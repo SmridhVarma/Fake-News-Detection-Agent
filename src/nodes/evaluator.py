@@ -11,12 +11,15 @@ import os
 
 def evaluator_node(state: AgentState) -> dict:
     """Evaluate the LLM output using DeepEval metrics."""
+    print("\n>>> [NODE] Starting Evaluator Node...")
     article_text = state.get("article_text", "")
     llm_label = state.get("llm_label", "")
     llm_reasoning = state.get("llm_reasoning", "")
     
     if not article_text or not llm_reasoning:
-        return {"eval_score": 0.0}
+        result = {"eval_score": 0.0}
+        print(">>> [NODE] Finished Evaluator Node.")
+        return result
         
     try:
         # Use a GEval metric to evaluate how well the reasoning aligns with the text
@@ -34,7 +37,11 @@ def evaluator_node(state: AgentState) -> dict:
         )
         
         metric.measure(test_case)
-        return {"eval_score": metric.score}
+        result = {"eval_score": metric.score}
+        print(">>> [NODE] Finished Evaluator Node.")
+        return result
     except Exception as e:
         print(f"Error during DeepEval execution: {e}")
-        return {"eval_score": 0.0}
+        result = {"eval_score": 0.0}
+        print(">>> [NODE] Finished Evaluator Node.")
+        return result

@@ -18,6 +18,8 @@ class AgentState(TypedDict, total=False):
     # ── Dataset / training configuration ───────────────────────
     fake_csv_path: str
     true_csv_path: str
+    train_size: float
+    val_size: float
     test_size: float
     random_state: int
 
@@ -45,6 +47,7 @@ class AgentState(TypedDict, total=False):
     # ── Dataset preprocessing outputs ──────────────────────────
     preprocessed_rows: int
     train_rows: int
+    val_rows: int
     test_rows: int
     numeric_feature_cols: List[str]
     preprocessing_artifact_path: str
@@ -53,8 +56,12 @@ class AgentState(TypedDict, total=False):
     model_trained: bool
     model_path: str
     training_artifact_path: str
+    candidate_validation_results: Dict[str, Any]
+    candidate_test_results: Dict[str, Any]
     candidate_results: Dict[str, Any]
     selected_model_name: str
+    selected_model_validation_metrics: Dict[str, Any]
+    selected_model_test_metrics: Dict[str, Any]
     selected_model_metrics: Dict[str, Any]
     saved_model_paths: Dict[str, str]
 

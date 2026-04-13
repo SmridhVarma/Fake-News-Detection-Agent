@@ -1,4 +1,5 @@
 import pandas as pd
+import os
 from sklearn.model_selection import train_test_split
 
 from src.state import AgentState
@@ -18,8 +19,18 @@ def build_full_text(df: pd.DataFrame) -> pd.Series:
 
 def preprocess_data_node(state: AgentState) -> dict:
     """
-    V1 preprocessing with train/validation/test split.
+    V1 preprocessing with train/validation/test split and dual cleaning support.
     """
+    print("\n>>> [NODE] Starting Preprocess Data Node...")
+    
+    # Check for v2 artifacts to skip retraining
+    v2_artifact_path = "./v2/preprocessing_artifacts.joblib"
+    if os.path.exists(v2_artifact_path):
+        print(f">>> [LOG] v2 preprocessing artifacts found at {v2_artifact_path}. Skipping processing.")
+        print(">>> [NODE] Finished Preprocess Data Node.")
+        return {
+            "preprocessing_artifact_path": v2_artifact_path,
+        }
 
     fake_path = state.get("fake_csv_path", "./data/Fake.csv")
     true_path = state.get("true_csv_path", "./data/True.csv")
@@ -45,6 +56,7 @@ def preprocess_data_node(state: AgentState) -> dict:
     df = df[df["raw_text"] != ""].copy()
     df = df.drop_duplicates(subset=["raw_text"]).reset_index(drop=True)
 
+    # 6. Create cleaned text columns (Integrated Upstream Dual Cleaning)
     df["text_llm"] = df["raw_text"].apply(clean_text_for_transformers)
     df["text_ml"] = df["raw_text"].apply(clean_text_for_traditional_ml)
 
@@ -62,6 +74,7 @@ def preprocess_data_node(state: AgentState) -> dict:
         "has_dateline",
     ]
 
+    # Integrated Upstream 3-way Split
     temp_size = val_size + test_size
     train_df, temp_df = train_test_split(
         df,
@@ -98,7 +111,7 @@ def preprocess_data_node(state: AgentState) -> dict:
         path="./models/v1/preprocessing_artifacts.joblib"
     )
 
-    return {
+    result = {
         "preprocessed_rows": len(df),
         "train_rows": len(train_df),
         "val_rows": len(val_df),
@@ -106,3 +119,5 @@ def preprocess_data_node(state: AgentState) -> dict:
         "numeric_feature_cols": numeric_feature_cols,
         "preprocessing_artifact_path": artifact_path,
     }
+    print(">>> [NODE] Finished Preprocess Data Node.")
+    return result
