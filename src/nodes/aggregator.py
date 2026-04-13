@@ -18,8 +18,12 @@ def aggregator_node(state: AgentState) -> dict:
     eval_agreement = (ml_label == llm_label) and ml_label != "UNKNOWN"
     eval_confidence_delta = abs(ml_score - llm_score)
     
-    # Map both confidences to P(REAL) scale [0, 1] for easier averaging
-    p_real_ml = ml_score if ml_label == "REAL" else 1.0 - ml_score
+    # Convert both signals into P(REAL) on [0, 1] before averaging.
+    # ML score is already probability of REAL from predict_proba(class=1),
+    # so do NOT invert it when ML label is FAKE.
+    p_real_ml = ml_score
+
+    # LLM score is confidence for its predicted label, so map to P(REAL).
     p_real_llm = llm_score if llm_label == "REAL" else 1.0 - llm_score
     
     # 50/50 split
@@ -30,7 +34,7 @@ def aggregator_node(state: AgentState) -> dict:
     
     summary = f"The article is classified as {final_label} with {final_score:.2f} confidence. "
     if eval_agreement:
-        summary += f"Both the ML model and the AI agreed on this verdict."
+        summary += "Both the ML model and the AI agreed on this verdict."
     else:
         summary += f"There was disagreement (ML predicted {ml_label}, AI predicted {llm_label}); the final verdict weighed both inputs."
         

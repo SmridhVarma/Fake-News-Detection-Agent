@@ -11,35 +11,62 @@ from textblob import TextBlob
 
 # ─── URL Fetching ──────────────────────────────────────────────────
 
+def _extract_text_from_html(html: bytes) -> str:
+    soup = BeautifulSoup(html, "html.parser")
+    for tag in soup(["script", "style", "nav", "footer", "header", "aside", "form", "iframe", "button"]):
+        tag.extract()
+
+    main_content = soup.find("article")
+    if not main_content:
+        for selector in [
+            "main",
+            "[role='main']",
+            "#content",
+            "#main-content",
+            ".article-body",
+            ".story-body",
+            ".story-details",
+            ".article_content",
+            ".article_body",
+        ]:
+            main_content = soup.select_one(selector)
+            if main_content:
+                break
+
+    if not main_content:
+        main_content = soup.body
+    if not main_content:
+        return ""
+
+    paragraphs = main_content.find_all("p")
+    text_blocks = [p.get_text(strip=True) for p in paragraphs if len(p.get_text(strip=True)) > 20]
+    if text_blocks:
+        return " ".join(text_blocks)
+    return main_content.get_text(separator=" ", strip=True)
+
+
 def fetch_article_from_url(url: str) -> str:
-    """Fetches the main textual content from a given URL with multi-strategy extraction."""
+    """Fetch main textual content from a URL with anti-block fallbacks."""
     headers = {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 '
-                      '(KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
+        "(KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
+        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+        "Accept-Language": "en-US,en;q=0.9",
+        "Referer": "https://www.google.com/",
     }
+
     try:
         response = requests.get(url, headers=headers, timeout=15, allow_redirects=True)
         response.raise_for_status()
-        soup = BeautifulSoup(response.content, 'html.parser')
-        for tag in soup(["script", "style", "nav", "footer", "header", "aside", "form", "iframe", "button"]):
-            tag.extract()
-
-        main_content = soup.find('article')
-        if not main_content:
-            # Added more common news selectors (e.g., for Times of India, CNN, etc.)
-            for selector in ['main', '[role="main"]', '#content', '#main-content', '.article-body', '.story-body', '.story-details', '.article_content', '.article_body']:
-                main_content = soup.select_one(selector)
-                if main_content: break
-        if not main_content: main_content = soup.body
-        if not main_content: return ""
-
-        paragraphs = main_content.find_all('p')
-        text_blocks = [p.get_text(strip=True) for p in paragraphs if len(p.get_text(strip=True)) > 20]
-        if text_blocks: return " ".join(text_blocks)
-        return main_content.get_text(separator=' ', strip=True)
+        text = _extract_text_from_html(response.content)
+        if text and len(text.strip()) > 80:
+            return text
     except Exception as e:
-        print(f"[fetch_url] Error fetching {url}: {e}")
-        return ""
+        print(f"[fetch_url] Primary fetch failed for {url}: {e}")
+
+    # Fallback removed: avoid third-party proxy extraction for privacy/reliability.
+    # If blocked by source site, caller should surface a user-friendly error.
+    return ""
 
 @tool
 def fetch_url_tool(url: str) -> str:
