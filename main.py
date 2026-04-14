@@ -85,7 +85,7 @@ body {
 .input-card textarea,
 .input-card input[type="text"] {
     background: #ffffff !important;
-    color: var(--body-text-color) !important;
+    color: #000000 !important;
     border-color: var(--border-color-primary) !important;
 }
 .input-card textarea::placeholder,
