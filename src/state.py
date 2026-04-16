@@ -52,6 +52,12 @@ class AgentState(TypedDict, total=False):
     numeric_feature_cols: List[str]
     preprocessing_artifact_path: str
 
+    # ── Intermediate training pipeline state ───────────────────
+    trained_candidates_path: Optional[str]        # joblib written by train_models_node
+    evaluation_artifact_path: Optional[str]       # joblib written by evaluate_models_node
+    training_cache_hit: Optional[bool]            # True when v2 cache bypasses training
+    candidate_model_names: Optional[List[str]]    # list of candidate model keys
+
     # ── Training outputs ───────────────────────────────────────
     model_trained: bool
     roc_curve_path: Optional[str]                 # path to saved ROC curve PNG

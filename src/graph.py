@@ -67,9 +67,9 @@ def run_agent(user_input: str, input_type: str = "text") -> dict:
         "random_state": 42,
 
         # Artifact paths
-        "preprocessing_artifact_path": "./models/preprocessing_artifacts.joblib",
-        "training_artifact_path": "./models/training_artifacts.joblib",
-        "model_dir": "./models/v1",
+        "preprocessing_artifact_path": "./models/v2/preprocessing_artifacts.joblib",
+        "training_artifact_path": "./models/v2/training_artifacts.joblib",
+        "model_dir": "./models/v2",
 
         # Preprocessing / ingestion outputs
         "article_title": None,
