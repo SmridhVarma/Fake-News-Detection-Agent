@@ -87,3 +87,5 @@ class AgentState(TypedDict, total=False):
     final_score: float                            # aggregated confidence
     explanation: str                              # human-readable explanation
     summary: str                                  # one-line verdict for UI display
+    ml_weight: Optional[float]                    # weight applied to ML signal in final aggregation
+    llm_weight: Optional[float]                   # weight applied to LLM signal in final aggregation

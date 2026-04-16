@@ -12,13 +12,11 @@ import os
 import json
 import re
 
-from src.utils.ingestion_tools import calculate_features_tool
 from src.utils.preprocessing_tools import preprocess_leakage_tool
 from src.utils.analysis_tools import sentiment_analysis_tool, source_credibility_tool
 from src.utils.verification_tools import cross_reference_tool
 
 ALL_TOOLS = [
-    calculate_features_tool,
     preprocess_leakage_tool,
     sentiment_analysis_tool,
     source_credibility_tool,

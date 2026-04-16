@@ -54,6 +54,31 @@ The agent must emit a fenced JSON block as its final message:
 }
 ```
 
+## Evidence signals to consider
+
+Use these signals as **supporting evidence**, not decision rules. Apply them in priority order — factual corroboration dominates; stylistic signals are tiebreakers only. When a high-priority signal conflicts with a low-priority one, explicitly acknowledge the conflict and state which evidence dominated.
+
+**Priority 1 — Factual corroboration (strongest signal)**
+- Cross-reference count: ≥3 independent credible sources corroborating the core claim is strong evidence of REAL; 0 sources with a highly specific claim is a significant red flag, but alone does not confirm FAKE (niche, regional, or non-English stories may be absent from NewsAPI).
+
+**Priority 2 — Source credibility**
+- Known high-credibility domain → mild positive signal for REAL.
+- Unknown or low-credibility domain → flag but do not treat as decisive; pair with other evidence.
+- No URL provided → treat as neutral; do not penalise.
+
+**Priority 3 — Stylistic and structural signals (tiebreakers)**
+
+These are research-backed correlates from fake news detection literature (LIAR, FakeNewsNet, NELA-GT datasets). They are correlational, not causal — genuine investigative reporting can share some of these traits.
+
+- **Emotional amplification**: heavy use of fear, anger, or outrage language beyond what the facts warrant → weak signal for FAKE.
+- **Lexical simplicity**: unusually short sentences and common vocabulary, optimised for virality rather than accuracy → weak signal for FAKE.
+- **Missing attribution**: no named sources, no verifiable author, or vague sourcing ("experts say", "sources report") → weak signal for FAKE.
+- **Headline–body mismatch**: headline makes a stronger claim than the body supports → weak signal for FAKE.
+- **Logical consistency**: internally contradictory claims within the article → weak signal for FAKE.
+- **Named, verifiable sources**: quotes attributed to named individuals with verifiable identities → mild signal for REAL.
+
+When stylistic signals conflict with factual corroboration, always defer to Priority 1 and 2 evidence and explain why in the reasoning.
+
 ## Notes
 - Logic lives in `src/nodes/llm_classifier.py`. Tools live in `src/utils/analysis_tools.py` and `src/utils/verification_tools.py`.
 - **Tone signals** must be computed on the original text, not the leakage-scrubbed text, so that ALL-CAPS and exclamation cues survive.
