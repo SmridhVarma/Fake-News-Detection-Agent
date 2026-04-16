@@ -22,8 +22,9 @@ ALL_TOOLS = [
     preprocess_leakage_tool,
     sentiment_analysis_tool,
     source_credibility_tool,
-    cross_reference_tool
+    cross_reference_tool,
 ]
+
 
 def load_skill(name: str) -> str:
     path = os.path.join(os.path.dirname(__file__), "..", "..", "skills", f"{name}.md")
@@ -33,17 +34,22 @@ def load_skill(name: str) -> str:
     except Exception:
         return ""
 
+
 def llm_classifier_node(state: AgentState) -> dict:
     """Uses a ReACT Agent to autonomously gather external context before classifying."""
     print("\n>>> [NODE] Starting LLM Classifier Node...")
     article_text = state.get("article_text", "")
-    
+
     if not article_text or len(article_text.strip()) < 50:
-         return {"llm_score": 0.5, "llm_label": "FAKE", "llm_reasoning": "Article content is missing or too short to analyze."}
+        return {
+            "llm_score": 0.5,
+            "llm_label": "FAKE",
+            "llm_reasoning": "Article content is missing or too short to analyze.",
+        }
 
     try:
         llm = ChatOpenAI(model="gpt-4o-mini", temperature=0.0)
-        
+
         # Build the system prompt using our Markdown skills
         system_prompt = f"""
 You are an autonomous Fact-Checking Agent. Your job is to verify the authenticity of an article using a ReACT thinking pattern.
@@ -51,7 +57,7 @@ Always outline your Thought, Action, and Observation for each step.
 
 You have access to several tools. You MUST follow these workflows:
 
-{load_skill('llm_classification')}
+{load_skill("llm_classification")}
 
 After using the tools to gather sufficient evidence, output your final classification wrapped in a JSON block exactly like this:
 ```json
@@ -64,21 +70,33 @@ After using the tools to gather sufficient evidence, output your final classific
 """
         # Create ReAct agent graph
         app = create_react_agent(llm, ALL_TOOLS)
-        
-        messages = app.invoke({"messages": [
-            SystemMessage(content=system_prompt),
-            HumanMessage(content=f"Verify this article:\n{article_text}")
-        ]})
+
+        input_type = state.get("input_type", "text")
+        raw_input = state.get("raw_input", "")
+
+        if input_type == "url" and raw_input:
+            user_prompt = f"Verify this article sourced from the URL ({raw_input}):\n\n{article_text}"
+        else:
+            user_prompt = f"Verify this article:\n\n{article_text}"
+
+        messages = app.invoke(
+            {
+                "messages": [
+                    SystemMessage(content=system_prompt),
+                    HumanMessage(content=user_prompt),
+                ]
+            }
+        )
         final_text = messages["messages"][-1].content
-        
+
         # Parse JSON
-        match = re.search(r'```json\s*(\{.*?\})\s*```', final_text, re.DOTALL)
+        match = re.search(r"```json\s*(\{.*?\})\s*```", final_text, re.DOTALL)
         if match:
             data = json.loads(match.group(1))
             result = {
                 "llm_score": float(data.get("confidence", 0.5)),
                 "llm_label": data.get("label", "FAKE").upper(),
-                "llm_reasoning": data.get("reasoning", final_text)
+                "llm_reasoning": data.get("reasoning", final_text),
             }
             print(">>> [NODE] Finished LLM Classifier Node.")
             return result
@@ -86,17 +104,18 @@ After using the tools to gather sufficient evidence, output your final classific
             result = {
                 "llm_score": 0.5,
                 "llm_label": "UNKNOWN",
-                "llm_reasoning": "Failed to parse final JSON output. Raw output:\n" + final_text
+                "llm_reasoning": "Failed to parse final JSON output. Raw output:\n"
+                + final_text,
             }
             print(">>> [NODE] Finished LLM Classifier Node.")
             return result
-            
+
     except Exception as e:
         print(f"Error during LLM classification: {e}")
         result = {
             "llm_score": 0.5,
             "llm_label": "FAKE",
-            "llm_reasoning": f"Failed to perform LLM analysis: {str(e)}"
+            "llm_reasoning": f"Failed to perform LLM analysis: {str(e)}",
         }
         print(">>> [NODE] Finished LLM Classifier Node.")
         return result
