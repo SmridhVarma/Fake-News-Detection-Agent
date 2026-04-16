@@ -1,6 +1,7 @@
 ---
 name: llm_classification
 description: Run the ReAct LLM fact-checking agent — analyze tone and source credibility, cross-reference claims via NewsAPI, then compose an evidence-grounded REAL/FAKE verdict with written reasoning for the Gradio UI.
+mode: llm_driven
 ---
 
 # LLM Classification Skill

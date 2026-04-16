@@ -1,6 +1,7 @@
 ---
 name: reasoning_evaluation
 description: Score the LLM classifier's written reasoning for faithfulness to the article using DeepEval's GEval metric, producing a trust signal surfaced in the Gradio UI.
+mode: llm_driven
 ---
 
 # Reasoning Evaluation Skill

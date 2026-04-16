@@ -84,6 +84,7 @@ def _run_classical_model(state: AgentState, artifacts: dict, selected_model_name
     return {
         "ml_score": round(score, 4),
         "ml_label": label,
+        "ml_model_name": selected_model_name,
     }
 
 

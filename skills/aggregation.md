@@ -1,6 +1,7 @@
 ---
 name: aggregation
 description: Combine the ML classifier's probability and the LLM classifier's verdict into a single final label, confidence, and user-facing summary for the Gradio UI.
+mode: organisational
 ---
 
 # Aggregation Skill

@@ -1,6 +1,7 @@
 ---
 name: select_model
 description: Choose the winning ML candidate based on validation-split performance, persist per-model artifacts plus the consolidated training bundle, and emit the final inference-time model path.
+mode: organisational
 ---
 
 # Select Model Skill

@@ -1,6 +1,7 @@
 ---
 name: train_models
 description: Fit four traditional ML candidates (Logistic Regression, calibrated LinearSVC, Random Forest, MLP) on TF-IDF + handcrafted features and persist them for downstream evaluation and selection.
+mode: organisational
 ---
 
 # Train Models Skill

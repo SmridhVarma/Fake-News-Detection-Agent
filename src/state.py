@@ -54,6 +54,8 @@ class AgentState(TypedDict, total=False):
 
     # ── Training outputs ───────────────────────────────────────
     model_trained: bool
+    roc_curve_path: Optional[str]                 # path to saved ROC curve PNG
+    confusion_matrix_path: Optional[str]          # path to saved confusion matrix PNG
     model_path: str
     training_artifact_path: str
     candidate_validation_results: Dict[str, Any]
@@ -68,6 +70,7 @@ class AgentState(TypedDict, total=False):
     # ── Phase 1: ML classifier ─────────────────────────────────
     ml_score: Optional[float]                     # model confidence [0-1]
     ml_label: Optional[str]                       # "FAKE" or "REAL"
+    ml_model_name: Optional[str]                  # winning model key (e.g. "logistic_regression")
 
     # ── Phase 2: LLM classifier ────────────────────────────────
     llm_score: Optional[float]                    # LLM confidence [0-1]

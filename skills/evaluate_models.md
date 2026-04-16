@@ -1,6 +1,7 @@
 ---
 name: evaluate_models
 description: Compute classification metrics (accuracy, precision, recall, F1, AUC-ROC) for every trained ML candidate on the validation and test splits, and record them for the Select Model stage and UI visualization.
+mode: organisational
 ---
 
 # Evaluate Models Skill
@@ -33,11 +34,12 @@ For each candidate, on **both** the validation and test splits:
 All values are rounded to 4 decimal places.
 
 ## Visualizations produced
-The Gradio UI renders the metrics dictionaries as:
-- A **per-model metrics table** showing accuracy / precision / recall / F1 / AUC-ROC for validation and test splits side by side.
-- A **winning-model highlight card** showing the Select Model stage's choice and its test-set metrics.
+Two plots are generated automatically and saved to `{model_dir}/plots/`:
 
-Planned (not yet implemented in code): confusion matrix heatmap and ROC curve overlay for the four candidates, to be rendered via matplotlib/plotly and surfaced in the Training Report tab of the UI.
+- **`roc_curves.png`** — ROC curve overlay for all four candidates on the test split. Each model is colour-coded; the diagonal random-classifier baseline is included. AUC values are shown in the legend.
+- **`confusion_matrices.png`** — Side-by-side confusion matrix heatmap (Blues palette) for every candidate on the test split, with FAKE/REAL axis labels.
+
+Both images are also loaded and displayed in the Jupyter notebook's evaluation section.
 
 ## Inputs from agent state
 - `trained_candidates_path`: Path written by the Train Models stage.
@@ -48,6 +50,8 @@ Planned (not yet implemented in code): confusion matrix heatmap and ROC curve ov
 - `evaluation_artifact_path`: Path to the evaluation results joblib.
 - `candidate_validation_results`: `{model_name: metrics_dict}` on the validation split.
 - `candidate_test_results`: `{model_name: metrics_dict}` on the test split.
+- `roc_curve_path`: File path to the saved ROC curve overlay PNG.
+- `confusion_matrix_path`: File path to the saved confusion matrix heatmap PNG.
 - `training_cache_hit`: Propagated flag.
 
 ## Output format
@@ -61,6 +65,8 @@ Planned (not yet implemented in code): confusion matrix heatmap and ROC curve ov
     "neural_network":      {"accuracy": 0.0, "precision": 0.0, "recall": 0.0, "f1": 0.0, "auc_roc": 0.0}
   },
   "candidate_test_results": { "...": "same shape as validation_results" },
+  "roc_curve_path": "./models/v1/plots/roc_curves.png",
+  "confusion_matrix_path": "./models/v1/plots/confusion_matrices.png",
   "training_cache_hit": false
 }
 ```

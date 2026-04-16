@@ -1,6 +1,7 @@
 ---
 name: ml_classification
 description: Apply the cached TF-IDF + handcrafted-feature pipeline and the winning classical ML model to produce a REAL/FAKE probability for a single article.
+mode: organisational
 ---
 
 # ML Classification Skill
@@ -28,12 +29,12 @@ You are the ML Inference Agent. Your job is to run the offline-trained scikit-le
 ## Outputs to agent state
 - `ml_score`: Probability of REAL in [0.0, 1.0] from `predict_proba(class=1)`.
 - `ml_label`: `"REAL"` if `ml_score >= 0.5`, else `"FAKE"`.
-- `ml_model_name`: Name of the winning model (for UI display).
+- `ml_model_name`: Key of the winning model loaded from the training bundle (e.g. `"logistic_regression"`), surfaced in the Gradio UI.
 
 ## Output format
 ```json
 {
-  "ml_score": 0.0,
+  "ml_score": 0.92,
   "ml_label": "REAL",
   "ml_model_name": "logistic_regression"
 }
@@ -43,4 +44,5 @@ You are the ML Inference Agent. Your job is to run the offline-trained scikit-le
 - Logic lives in `src/nodes/ml_classifier.py`.
 - `ml_score` is already `P(REAL)`; downstream aggregation must **not** invert it when the label is FAKE.
 - The feature pipeline must match training exactly (same TF-IDF object, same scaler, same column order for numeric features) or predictions will be silently wrong.
+- `ml_model_name` is read from `artifacts["selected_model_name"]` in the training bundle and passed to state so the Gradio UI can display which model made the prediction.
 - If the training bundle is missing, fail loudly rather than returning a default 0.5.
