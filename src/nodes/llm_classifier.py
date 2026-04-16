@@ -51,9 +51,7 @@ Always outline your Thought, Action, and Observation for each step.
 
 You have access to several tools. You MUST follow these workflows:
 
-{load_skill('analysis')}
-{load_skill('verification')}
-{load_skill('explanation')}
+{load_skill('llm_classification')}
 
 After using the tools to gather sufficient evidence, output your final classification wrapped in a JSON block exactly like this:
 ```json

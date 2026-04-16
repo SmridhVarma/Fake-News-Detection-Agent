@@ -11,7 +11,9 @@ from src.state import AgentState
 from src.nodes import (
     ingestion_node,
     preprocess_data_node,
-    training_node,
+    train_models_node,
+    evaluate_models_node,
+    select_model_node,
     ml_classifier_node,
     llm_classifier_node,
     evaluator_node,
@@ -23,19 +25,23 @@ builder = StateGraph(AgentState)
 
 builder.add_node("ingest", ingestion_node)
 builder.add_node("preprocess_data", preprocess_data_node)
-builder.add_node("train", training_node)
+builder.add_node("train_models", train_models_node)
+builder.add_node("evaluate_models", evaluate_models_node)
+builder.add_node("select_model", select_model_node)
 builder.add_node("ml_classify", ml_classifier_node)
 builder.add_node("llm_classify", llm_classifier_node)
-builder.add_node("evaluate", evaluator_node)
+builder.add_node("reasoning_evaluate", evaluator_node)
 builder.add_node("aggregate", aggregator_node)
 
 builder.set_entry_point("ingest")
 builder.add_edge("ingest", "preprocess_data")
-builder.add_edge("preprocess_data", "train")
-builder.add_edge("train", "ml_classify")
+builder.add_edge("preprocess_data", "train_models")
+builder.add_edge("train_models", "evaluate_models")
+builder.add_edge("evaluate_models", "select_model")
+builder.add_edge("select_model", "ml_classify")
 builder.add_edge("ml_classify", "llm_classify")
-builder.add_edge("llm_classify", "evaluate")
-builder.add_edge("evaluate", "aggregate")
+builder.add_edge("llm_classify", "reasoning_evaluate")
+builder.add_edge("reasoning_evaluate", "aggregate")
 builder.add_edge("aggregate", END)
 
 graph = builder.compile()
