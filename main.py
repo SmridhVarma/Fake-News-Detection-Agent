@@ -36,6 +36,8 @@ EXAMPLE_TEXTS = [
     ],
 ]
 
+# Custom CSS: override Gradio defaults for verdict display, hide built-in progress overlays,
+# and polish input/tab/button styling.
 CUSTOM_CSS = """
 /* Global typography and spacing */
 body {
@@ -277,6 +279,7 @@ textarea:focus, input:focus {
 
 
 def _build_verdict_html(final_label: str, final_score: float) -> str:
+    """Return an HTML block displaying the verdict label, emoji, and confidence."""
     emoji_map = {"REAL": "\u2705", "FAKE": "\u274c"}
     emoji = emoji_map.get(final_label, "\u2753")
     css_class = final_label.lower() if final_label in ("REAL", "FAKE") else "unknown"
@@ -292,6 +295,14 @@ def _build_verdict_html(final_label: str, final_score: float) -> str:
 def _build_score_cards(
     ml_label, ml_score, llm_label, llm_score, eval_score, eval_agreement
 ):
+    """Return HTML score cards for ML verdict, LLM verdict, DeepEval score, and agreement badge.
+
+    Args:
+        ml_label, ml_score: Traditional ML model output.
+        llm_label, llm_score: LLM agent output.
+        eval_score: DeepEval reasoning quality (0–1).
+        eval_agreement: Whether ML and LLM labels match.
+    """
     agree_class = "agree" if eval_agreement else "disagree"
     agree_text = "Agreed" if eval_agreement else "Disagreed"
     agree_icon = "\u2713" if eval_agreement else "\u26a0"
@@ -315,18 +326,26 @@ def _build_score_cards(
 
 
 def classify_article(text: str, url: str, active_input_type: str):
+    """Gradio handler — validates input, runs the pipeline, and yields streaming UI updates.
+
+    This is a generator function. Each yield emits a 6-tuple matching the Gradio outputs:
+    (verdict_html, score_cards_html, summary, explanation, details_md, status_md)
+    """
     input_text = text.strip() if text else ""
     input_url = url.strip() if url else ""
 
     if active_input_type == "url":
         if not input_url:
             yield (
-                gr.update(),
-                gr.update(),
                 "",
                 "",
                 "",
-                "### Ready\n- Enter a news URL, then click Analyze Article",
+                "",
+                "",
+                gr.update(
+                    value="### Ready\n- Enter a news URL, then click Analyze Article",
+                    elem_classes=["status-panel", "error-panel"],
+                ),
             )
             raise gr.Error("URL tab is selected. Please enter a news URL to analyze.")
         input_type = "url"
@@ -334,12 +353,15 @@ def classify_article(text: str, url: str, active_input_type: str):
     else:
         if not input_text:
             yield (
-                gr.update(),
-                gr.update(),
                 "",
                 "",
                 "",
-                "### Ready\n- Paste article text, then click Analyze Article",
+                "",
+                "",
+                gr.update(
+                    value="### Ready\n- Paste article text, then click Analyze Article",
+                    elem_classes=["status-panel", "error-panel"],
+                ),
             )
             raise gr.Error(
                 "Paste Article tab is selected. Please enter article text to analyze."
@@ -355,12 +377,15 @@ def classify_article(text: str, url: str, active_input_type: str):
     )
 
     yield (
-        gr.update(),
-        gr.update(),
         "",
         "",
         "",
-        f"### Processing\n- Step 1/4: Input validated ({input_type.upper()})\n- Step 2/4: Pipeline started\n- {warmup_msg}",
+        "",
+        "",
+        gr.update(
+            value=f"### Processing\n- Step 1/4: Input validated ({input_type.upper()})\n- Step 2/4: Pipeline started\n- {warmup_msg}",
+            elem_classes=["status-panel"],
+        ),
     )
 
     try:
@@ -375,21 +400,27 @@ def classify_article(text: str, url: str, active_input_type: str):
         err_msg = str(e)
         if input_type == "url":
             yield (
-                gr.update(),
-                gr.update(),
                 "",
                 "",
                 "",
-                f"### Error\n- Could not read content from the URL\n- The site may block automated access\n- **Try pasting the article text directly** in the 'Paste Article' tab\n- Detail: {err_msg}",
+                "",
+                "",
+                gr.update(
+                    value=f"### Error\n- Could not read content from the URL\n- The site may block automated access\n- **Try pasting the article text directly** in the 'Paste Article' tab\n- Detail: {err_msg}",
+                    elem_classes=["status-panel", "error-panel"],
+                ),
             )
         else:
             yield (
-                gr.update(),
-                gr.update(),
                 "",
                 "",
                 "",
-                f"### Error\n- Analysis failed\n- Detail: {err_msg}",
+                "",
+                "",
+                gr.update(
+                    value=f"### Error\n- Analysis failed\n- Detail: {err_msg}",
+                    elem_classes=["status-panel", "error-panel"],
+                ),
             )
         return
 
@@ -427,24 +458,31 @@ def classify_article(text: str, url: str, active_input_type: str):
         f"- Total runtime: {elapsed:.1f}s"
     )
 
-    yield verdict_html, score_cards_html, summary, explanation, details_md, status_md
+    yield (
+        verdict_html,
+        score_cards_html,
+        summary,
+        explanation,
+        details_md,
+        gr.update(value=status_md, elem_classes=["status-panel"]),
+    )
 
 
 def _clear_results():
     return (
-        gr.update(value=""),
-        gr.update(value=""),
         "",
         "",
         "",
-        "### Ready\n- Enter article text or URL, then click Analyze Article",
+        "",
+        "",
+        gr.update(
+            value="### Ready\n- Enter article text or URL, then click Analyze Article",
+            elem_classes=["status-panel"],
+        ),
     )
 
 
-def _on_error_clear(*_args):
-    return _clear_results()
-
-
+# Soft theme with slate/blue palette. Light-mode-first with dark-mode overrides.
 theme = gr.themes.Soft(
     primary_hue=gr.themes.colors.slate,
     secondary_hue=gr.themes.colors.blue,
