@@ -1,0 +1,13 @@
+=== SENSE CHECK V1 ===
+Train rows: 27372
+Validation rows: 7820
+Test rows: 3911
+Similarity threshold counts: {'gt_0_95': 49, 'gt_0_98': 40, 'gt_0_99': 35}
+Top REAL indicators:
+president donald, washington, thursday, wednesday, tuesday, reuters, washington president, london, thats, friday, president barack, im, said, monday, said statement, nov, said thursday, he, showed, ive, there, sunday, told reporter, told reuters, dont, factbox, republican presidential, news conference, rival, hillary clinton
+Top FAKE indicators:
+via, video, breaking, president trump, gop, hillary, rep, sen, image via, isi, really, reportedly, watch, washington post, mr, night, obama, gov, even, liberal, image, morning, century wire, american, like, wire, terrorist, daily, wire say, dc
+Ablation results:
+                                model  accuracy  precision  recall     f1  auc_roc
+logistic_regression_no_first_sentence    0.9765     0.9751  0.9825 0.9788   0.9968
+                svm_no_first_sentence    0.9870     0.9900  0.9863 0.9881   0.9984

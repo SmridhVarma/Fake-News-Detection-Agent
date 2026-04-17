@@ -1,0 +1,3 @@
+model,accuracy,precision,recall,f1,auc_roc
+logistic_regression_no_first_sentence,0.9765,0.9751,0.9825,0.9788,0.9968
+svm_no_first_sentence,0.987,0.99,0.9863,0.9881,0.9984

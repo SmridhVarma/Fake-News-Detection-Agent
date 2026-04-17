@@ -1,4 +1,4 @@
-from src.nodes.preprocess_data_v2 import preprocess_data_node
+from src.ml.preprocess_data_v2 import preprocess_data_node
 from src.nodes.training import training_node
 
 print("Running preprocessing (v2)...")

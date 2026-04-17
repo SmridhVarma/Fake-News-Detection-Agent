@@ -1,0 +1,28 @@
+=== BASIC V1 SUMMARY ===
+
+Selected model: neural_network
+Validation metrics: {'accuracy': 0.9925, 'precision': 0.9895, 'recall': 0.9967, 'f1': 0.9931, 'auc_roc': 0.9994}
+Test metrics: {'accuracy': 0.9913, 'precision': 0.9901, 'recall': 0.9939, 'f1': 0.992, 'auc_roc': 0.9996}
+
+Majority baseline accuracy: 0.5421
+
+Confusion matrix:
+[[1770   21]
+ [  13 2107]]
+
+Classification report:
+              precision    recall  f1-score   support
+
+           0     0.9927    0.9883    0.9905      1791
+           1     0.9901    0.9939    0.9920      2120
+
+    accuracy                         0.9913      3911
+   macro avg     0.9914    0.9911    0.9912      3911
+weighted avg     0.9913    0.9913    0.9913      3911
+
+
+Text-only SVM metrics:
+{'accuracy': 0.9864, 'precision': 0.9877, 'recall': 0.9873, 'f1': 0.9875, 'auc_roc': 0.9988}
+
+Text + handcrafted features SVM metrics:
+{'accuracy': 0.99, 'precision': 0.9906, 'recall': 0.991, 'f1': 0.9908, 'auc_roc': 0.9995}
