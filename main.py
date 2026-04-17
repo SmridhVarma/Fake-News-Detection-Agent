@@ -436,14 +436,17 @@ def classify_article(text: str, url: str, active_input_type: str):
     eval_score = result.get("eval_score", 0.0)
     eval_agreement = result.get("eval_agreement", False)
 
+    # Convert ML raw probability (P(REAL)) to confidence in the predicted label
+    ml_confidence = ml_score if ml_label == "REAL" else 1 - ml_score
+
     verdict_html = _build_verdict_html(final_label, final_score)
     score_cards_html = _build_score_cards(
-        ml_label, ml_score, llm_label, llm_score, eval_score, eval_agreement
+        ml_label, ml_confidence, llm_label, llm_score, eval_score, eval_agreement
     )
 
     details_md = (
         f"### Pipeline Breakdown\n\n"
-        f"**ML Model:** {ml_label} with {ml_score:.0%} confidence\n"
+        f"**ML Model:** {ml_label} with {ml_confidence:.0%} confidence\n"
         f"**AI Agent:** {llm_label} with {llm_score:.0%} confidence\n"
         f"**Agreement:** {'Yes' if eval_agreement else 'No'}\n"
         f"**DeepEval Score:** {eval_score:.2f} / 1.00\n"
@@ -452,7 +455,7 @@ def classify_article(text: str, url: str, active_input_type: str):
     status_md = (
         "### Processing Complete\n"
         f"- Step 1/4: Input + ingestion\n"
-        f"- Step 2/4: ML inference finished ({ml_label}, {ml_score:.0%})\n"
+        f"- Step 2/4: ML inference finished ({ml_label}, {ml_confidence:.0%})\n"
         f"- Step 3/4: LLM fact-check finished ({llm_label}, {llm_score:.0%})\n"
         f"- Step 4/4: Evaluation + aggregation complete\n"
         f"- Total runtime: {elapsed:.1f}s"
