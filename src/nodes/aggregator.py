@@ -55,9 +55,11 @@ def aggregator_node(state: AgentState) -> dict:
     if not eval_agreement:
         summary += f" (ML: {ml_label}, AI: {llm_label})"
 
+    ml_confidence = ml_score if ml_label == "REAL" else 1.0 - ml_score
+
     explanation = f"""
 ### Analysis Results:
-- **ML Model:** {ml_label} (Confidence: {ml_score:.2f})
+- **ML Model:** {ml_label} (Confidence: {ml_confidence:.2f})
 - **AI Classifier:** {llm_label} (Confidence: {llm_score:.2f})
 - **DeepEval Reasoning Score:** {eval_score:.2f}/1.0
 
