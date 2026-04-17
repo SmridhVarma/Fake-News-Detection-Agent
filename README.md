@@ -117,6 +117,53 @@ The LangGraph ecosystem stores all intermediate context in a central `AgentState
 
 ---
 
+## Standalone ML Training & Evaluation
+
+Outside the LangGraph pipeline, standalone scripts handle ML model training and evaluation. These are organized under `src/ml/` and `src/evaluation/`.
+
+### Project Structure (Standalone ML)
+
+```
+src/
+├── ml/                          # Standalone ML training
+│   ├── training2.py             # Training node with GridSearchCV tuning
+│   ├── training2_simple.py      # Training node (baseline, no tuning)
+│   └── preprocess_data_v2.py    # V2 preprocessing (stronger dedup)
+├── evaluation/                  # Evaluation & sense-check scripts
+│   ├── basic_v1.py              # V1 model evaluation
+│   ├── basic_v2.py              # V2 model evaluation
+│   ├── basic2.py                # V2 detailed evaluation with plots
+│   ├── sense_check_v1.py        # V1 leakage & ablation analysis
+│   ├── sense_check_v2.py        # V2 leakage & ablation analysis
+│   └── compare_v1_v2.py         # V1 vs V2 comparison
+new_test_training_v1.py          # Runner: V1 preprocess + train
+new_test_training_v2.py          # Runner: V2 preprocess + train
+```
+
+### Running Standalone Training
+
+```bash
+# Train V1 (basic dedup)
+python new_test_training_v1.py
+
+# Train V2 (stronger canonical dedup)
+python new_test_training_v2.py
+
+# Run evaluations (from project root)
+python -m src.evaluation.basic_v1
+python -m src.evaluation.basic_v2
+python -m src.evaluation.basic2
+python -m src.evaluation.sense_check_v1
+python -m src.evaluation.sense_check_v2
+python -m src.evaluation.compare_v1_v2
+```
+
+Outputs are saved to:
+- `models/v1/` and `models/v2/` — trained model artifacts
+- `evaluation_outputs/` — metrics CSVs, confusion matrices, ROC curves, comparison charts
+
+---
+
 ## Setup & Execution
 
 ### 1. Installation
