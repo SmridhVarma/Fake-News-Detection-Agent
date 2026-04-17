@@ -59,3 +59,31 @@ bt5151_group_project_2026.pdf
 # others
 reference_material/
 slides/
+
+# Evaluation outputs and training experiments
+evaluation_outputs/
+evaluation_outputs_w_nn_tuning/
+models_w_tuning/
+Model Training & Evaluation Scripts/
+
+# Project documents (submitted separately)
+5151 Report.docx
+Fake News Detection Agent - Deck.pptx
+
+# Tool/IDE state directories
+.claude/
+.gradio/
+.kilo/
+
+# Scratch files and helper scripts
+temp_extract/
+report_analysis.txt
+report_text.txt
+check_layouts.py
+edit_deck_win32.py
+inspect_deck.py
+update_deck.py
+test_duplicate.py
+test_duplicate2.py
+test_duplicate3.py
+test_duplicate4.py
