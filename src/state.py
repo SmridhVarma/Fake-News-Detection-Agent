@@ -82,6 +82,8 @@ class AgentState(TypedDict, total=False):
     llm_score: Optional[float]                    # LLM confidence [0-1]
     llm_label: Optional[str]                      # "FAKE" or "REAL"
     llm_reasoning: Optional[str]                  # free-text rationale from LLM
+    related_articles: List[Dict[str, str]]        # NewsAPI corroborating sources (title, source, url, description)
+    llm_tool_trace: List[Dict[str, Any]]          # ordered list of tool calls the ReACT agent made
 
     # ── Evaluation (model vs LLM comparison) ───────────────────
     eval_agreement: Optional[bool]                # True if ml_label == llm_label

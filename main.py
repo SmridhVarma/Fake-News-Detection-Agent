@@ -201,11 +201,7 @@ body {
 
 /* Hide Gradio queue/progress overlays; use custom status panel instead */
 .progress-text,
-.progress-text + .progress-text,
-.wrap.svelte-1ipelgc,
-.pending.svelte-1ipelgc,
 .loading-status,
-.status-bar,
 [data-testid="status-bar"],
 [data-testid="block-progress"] {
     display: none !important;
@@ -275,6 +271,57 @@ textarea:focus, input:focus {
 .hide-label .label-wrap {
     display: none !important;
 }
+
+/* Hide empty result card before first run */
+#result-score-cards:empty {
+    display: none !important;
+}
+
+/* Disagreement CTA under the badge */
+.disagreement-cta {
+    margin-top: 10px;
+    padding: 8px 12px;
+    border-radius: 8px;
+    background: #fffbeb;
+    border: 1px solid #fde68a;
+    color: #92400e;
+    font-size: 13px;
+    font-weight: 500;
+    text-align: center;
+}
+
+/* URL tab hint */
+.url-hint {
+    margin-top: 6px;
+    font-size: 12px;
+    color: var(--body-text-color-subdued);
+    line-height: 1.4;
+}
+
+/* Labeled example buttons */
+.example-header {
+    margin-top: 8px;
+    font-size: 13px;
+    color: var(--body-text-color-subdued);
+}
+.example-row {
+    gap: 8px !important;
+    margin-top: 4px;
+}
+.example-btn {
+    font-size: 13px !important;
+    font-weight: 500 !important;
+    border-radius: 8px !important;
+    padding: 8px 12px !important;
+    white-space: normal !important;
+    text-align: left !important;
+}
+.example-btn.example-real {
+    border-left: 3px solid #10b981 !important;
+}
+.example-btn.example-fake {
+    border-left: 3px solid #ef4444 !important;
+}
 """
 
 
@@ -306,6 +353,11 @@ def _build_score_cards(
     agree_class = "agree" if eval_agreement else "disagree"
     agree_text = "Agreed" if eval_agreement else "Disagreed"
     agree_icon = "\u2713" if eval_agreement else "\u26a0"
+    cta_html = (
+        ""
+        if eval_agreement
+        else '<div class="disagreement-cta">Models disagree — recommend human review before publishing.</div>'
+    )
     return (
         f'<div class="score-card">'
         f'<div class="score-card-label">ML Model Verdict</div>'
@@ -322,6 +374,7 @@ def _build_score_cards(
         f'<div style="text-align:center;margin-top:8px;">'
         f'<span class="agreement-badge {agree_class}">{agree_icon} Models {agree_text}</span>'
         f"</div>"
+        f"{cta_html}"
     )
 
 
@@ -429,6 +482,30 @@ def classify_article(text: str, url: str, active_input_type: str):
     summary = result.get("summary", "No summary available.")
     explanation = result.get("explanation", "")
 
+    # Append corroborating sources from NewsAPI (QW-6) to the explanation markdown
+    related_articles = result.get("related_articles", []) or []
+    if related_articles:
+        top_sources = related_articles[:3]
+        sources_md = "\n\n---\n\n### Corroborating Sources (NewsAPI)\n\n"
+        for i, art in enumerate(top_sources, 1):
+            title = art.get("title") or "(untitled)"
+            source = art.get("source") or "Unknown"
+            url_link = art.get("url") or ""
+            if url_link:
+                sources_md += f"{i}. **{source}** — [{title}]({url_link})\n"
+            else:
+                sources_md += f"{i}. **{source}** — {title}\n"
+        total = len(related_articles)
+        if total > 3:
+            sources_md += f"\n_Showing top 3 of {total} matches._\n"
+        explanation = (explanation or "") + sources_md
+    else:
+        explanation = (explanation or "") + (
+            "\n\n---\n\n### Corroborating Sources (NewsAPI)\n\n"
+            "_No related articles found. This may indicate an exclusive story, a niche topic, "
+            "or fabricated content._\n"
+        )
+
     ml_label = result.get("ml_label", "N/A")
     ml_score = result.get("ml_score", 0.0)
     llm_label = result.get("llm_label", "N/A")
@@ -444,7 +521,80 @@ def classify_article(text: str, url: str, active_input_type: str):
         ml_label, ml_confidence, llm_label, llm_score, eval_score, eval_agreement
     )
 
+    caps_ratio = result.get("caps_ratio")
+    mean_subjectivity = result.get("mean_subjectivity")
+    sub_variance = result.get("style_score")
+    lexical_density = result.get("lexical_density")
+    has_dateline = result.get("has_dateline")
+
+    def _fmt(v, pct=False):
+        if v is None:
+            return "n/a"
+        return f"{v:.2%}" if pct else f"{v:.2f}"
+
+    dateline_str = "n/a" if has_dateline is None else ("Yes" if has_dateline else "No")
+
+    # Build tool-trace section showing which tools the ReACT agent invoked.
+    tool_trace = result.get("llm_tool_trace", []) or []
+    tool_friendly = {
+        "cross_reference_tool": "cross_reference_tool (NewsAPI)",
+        "sentiment_analysis_tool": "sentiment_analysis_tool (TextBlob)",
+        "source_credibility_tool": "source_credibility_tool (domain tier)",
+        "preprocess_leakage_tool": "preprocess_leakage_tool (clean text)",
+        "fetch_url_tool": "fetch_url_tool (URL scrape)",
+    }
+    # Count invocations per tool name
+    tool_counts = {}
+    for entry in tool_trace:
+        tool_counts[entry["name"]] = tool_counts.get(entry["name"], 0) + 1
+    all_tool_names = [
+        "sentiment_analysis_tool",
+        "source_credibility_tool",
+        "cross_reference_tool",
+        "preprocess_leakage_tool",
+        "fetch_url_tool",
+    ]
+    for name in tool_counts:
+        if name not in all_tool_names:
+            all_tool_names.append(name)
+
+    if tool_trace:
+        trace_lines = [
+            "### Agent Tool Trace",
+            "",
+            "| Tool | Called | Times |",
+            "| --- | :---: | :---: |",
+        ]
+        for name in all_tool_names:
+            count = tool_counts.get(name, 0)
+            mark = "\u2713" if count > 0 else "\u2014"
+            display_name = tool_friendly.get(name, name)
+            trace_lines.append(f"| {display_name} | {mark} | {count if count else '-'} |")
+        trace_md = "\n".join(trace_lines) + "\n\n"
+        # Show cross_reference_tool detail if it ran
+        for entry in tool_trace:
+            if entry["name"] == "cross_reference_tool":
+                query_arg = (entry.get("args") or {}).get("article_title", "") or "(none)"
+                first_line = (entry.get("result") or "").splitlines()[0] if entry.get("result") else ""
+                trace_md += (
+                    f"**cross_reference_tool query:** `{query_arg[:120]}`  \n"
+                    f"**Result (first line):** {first_line}\n\n"
+                )
+                break
+    else:
+        trace_md = (
+            "### Agent Tool Trace\n\n"
+            "_No tool calls recorded — the LLM responded without invoking any tools._\n\n"
+        )
+
     details_md = (
+        f"### Key Signals\n\n"
+        f"- **Caps ratio:** {_fmt(caps_ratio, pct=True)} — sensationalism indicator\n"
+        f"- **Subjectivity (mean):** {_fmt(mean_subjectivity)} — opinion vs fact\n"
+        f"- **Subjectivity (variance):** {_fmt(sub_variance)} — tonal switching\n"
+        f"- **Lexical density:** {_fmt(lexical_density)} — content vs filler\n"
+        f"- **Dateline present:** {dateline_str} — publisher-style proxy\n\n"
+        f"{trace_md}"
         f"### Pipeline Breakdown\n\n"
         f"**ML Model:** {ml_label} with {ml_confidence:.0%} confidence\n"
         f"**AI Agent:** {llm_label} with {llm_score:.0%} confidence\n"
@@ -577,6 +727,12 @@ with gr.Blocks(
                             show_label=False,
                             elem_classes="hide-label",
                         )
+                        gr.Markdown(
+                            "_Note: major publishers (Reuters, NYT, WSJ, Bloomberg) block "
+                            "automated scraping. If the URL fails, paste the article text "
+                            "into the **Paste Article** tab instead._",
+                            elem_classes="url-hint",
+                        )
 
             with gr.Row(elem_classes="btn-row"):
                 submit_btn = gr.Button(
@@ -596,12 +752,20 @@ with gr.Blocks(
             text_tab.select(lambda: "text", None, active_input_type)
             url_tab.select(lambda: "url", None, active_input_type)
 
-            gr.Examples(
-                examples=EXAMPLE_TEXTS,
-                inputs=text_input,
-                label="Try an example",
-                examples_per_page=2,
-            )
+            gr.Markdown("**Try an example:**", elem_classes="example-header")
+            with gr.Row(elem_classes="example-row"):
+                real_example_btn = gr.Button(
+                    "Real: Reuters Fed announcement",
+                    size="sm",
+                    elem_classes="example-btn example-real",
+                )
+                fake_example_btn = gr.Button(
+                    "Fake: Sensationalist conspiracy",
+                    size="sm",
+                    elem_classes="example-btn example-fake",
+                )
+            real_example_btn.click(lambda: EXAMPLE_TEXTS[0][0], None, text_input)
+            fake_example_btn.click(lambda: EXAMPLE_TEXTS[1][0], None, text_input)
 
         with gr.Column(scale=6, min_width=420):
             gr.HTML('<div class="section-label">Result</div>')
@@ -615,7 +779,7 @@ with gr.Blocks(
 
             with gr.Row():
                 with gr.Column():
-                    score_cards_output = gr.HTML()
+                    score_cards_output = gr.HTML(elem_id="result-score-cards")
 
             summary_output = gr.Textbox(
                 label="Summary",
@@ -639,6 +803,10 @@ with gr.Blocks(
                 "Model Performance Dashboard", open=False, elem_classes="accordion-section"
             ):
                 gr.Markdown(
+                    "_Trained on Kaggle Fake-and-Real News Dataset (2015–2018). "
+                    "Retraining recommended before production deployment._"
+                )
+                gr.Markdown(
                     f"**Training Insight:** The ML Verdict was generated by the **{BEST_MODEL_NAME}** model, "
                     f"which proved to be the most accurate during training. See full validation metrics below."
                 )
@@ -648,8 +816,8 @@ with gr.Blocks(
                     interactive=False
                 )
                 with gr.Row():
-                    gr.Image(value="models/v2/plots/roc_curves.png", label="ROC Curves (Test Dataset)")
-                    gr.Image(value="models/v2/plots/confusion_matrices.png", label="Confusion Matrices (Test Dataset)")
+                    gr.Image(value="evaluation_outputs/v2_detailed/roc_curve_comparison.png", label="ROC Curves (Test Dataset)", height=400)
+                    gr.Image(value="evaluation_outputs/v2_detailed/confusion_matrix_svm.png", label="SVM Confusion Matrix (Selected Model)", height=400)
 
     submit_btn.click(
         fn=classify_article,
@@ -687,5 +855,10 @@ with gr.Blocks(
 
 
 if __name__ == "__main__":
-    port = int(os.getenv("GRADIO_SERVER_PORT", 7860))
-    demo.launch(server_port=port, share=False, css=CUSTOM_CSS, theme=theme)
+    demo.launch(
+        share=False,
+        css=CUSTOM_CSS,
+        theme=theme,
+        inbrowser=True,
+        allowed_paths=["evaluation_outputs"],
+    )

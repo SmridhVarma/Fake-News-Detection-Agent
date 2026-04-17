@@ -14,7 +14,7 @@ import re
 
 from src.utils.preprocessing_tools import preprocess_leakage_tool
 from src.utils.analysis_tools import sentiment_analysis_tool, source_credibility_tool
-from src.utils.verification_tools import cross_reference_tool
+from src.utils.verification_tools import cross_reference_tool, cross_reference_article
 
 ALL_TOOLS = [
     preprocess_leakage_tool,
@@ -37,12 +37,14 @@ def llm_classifier_node(state: AgentState) -> dict:
     """Uses a ReACT Agent to autonomously gather external context before classifying."""
     print("\n>>> [NODE] Starting LLM Classifier Node...")
     article_text = state.get("article_text", "")
+    article_title = state.get("article_title") or ""
 
     if not article_text or len(article_text.strip()) < 50:
         return {
             "llm_score": 0.5,
             "llm_label": "FAKE",
             "llm_reasoning": "Article content is missing or too short to analyze.",
+            "related_articles": [],
         }
 
     try:
@@ -87,6 +89,63 @@ After using the tools to gather sufficient evidence, output your final classific
         )
         final_text = messages["messages"][-1].content
 
+        # Build an ordered trace of every tool invocation the ReACT agent made,
+        # pairing each AIMessage tool_call with its matching ToolMessage result.
+        tool_trace = []
+        call_index = {}  # tool_call_id -> trace entry
+        for msg in messages["messages"]:
+            tool_calls = getattr(msg, "tool_calls", None)
+            if tool_calls:
+                for tc in tool_calls:
+                    name = tc.get("name") if isinstance(tc, dict) else getattr(tc, "name", None)
+                    args = tc.get("args") if isinstance(tc, dict) else getattr(tc, "args", {})
+                    tc_id = tc.get("id") if isinstance(tc, dict) else getattr(tc, "id", None)
+                    entry = {
+                        "name": name or "unknown",
+                        "args": args or {},
+                        "result": "",
+                    }
+                    tool_trace.append(entry)
+                    if tc_id:
+                        call_index[tc_id] = entry
+                continue
+            # ToolMessage carries the result text; match by tool_call_id
+            tool_call_id = getattr(msg, "tool_call_id", None)
+            if tool_call_id and tool_call_id in call_index:
+                call_index[tool_call_id]["result"] = str(getattr(msg, "content", ""))
+
+        print(f"[llm_classifier] Agent made {len(tool_trace)} tool call(s):")
+        for i, entry in enumerate(tool_trace, 1):
+            print(f"  [{i}] {entry['name']} args={entry['args']!r}")
+            result_preview = entry["result"][:200].replace("\n", " | ")
+            print(f"      -> {result_preview}")
+
+        # Pull the article_title the LLM passed to cross_reference_tool (if any),
+        # so the UI's corroborating-sources section uses the same query.
+        llm_query_title = ""
+        for entry in tool_trace:
+            if entry["name"] == "cross_reference_tool":
+                llm_query_title = (entry["args"] or {}).get("article_title", "") or ""
+                if llm_query_title:
+                    break
+
+        query_title = llm_query_title or article_title
+        cross_ref_called = any(e["name"] == "cross_reference_tool" for e in tool_trace)
+        print(
+            f"[llm_classifier] cross_reference_tool called by agent: {cross_ref_called}; "
+            f"direct-call query title: {query_title[:100]!r}"
+        )
+        try:
+            cross_ref = cross_reference_article(query_title, article_text)
+            related_articles = cross_ref.get("related_articles", [])
+            print(
+                f"[llm_classifier] NewsAPI returned {len(related_articles)} related articles "
+                f"for UI (sources: {[a.get('source') for a in related_articles[:5]]})."
+            )
+        except Exception as e:
+            print(f"[llm_classifier] Failed to fetch related articles: {e}")
+            related_articles = []
+
         # Parse JSON
         match = re.search(r"```json\s*(\{.*?\})\s*```", final_text, re.DOTALL)
         if match:
@@ -95,6 +154,8 @@ After using the tools to gather sufficient evidence, output your final classific
                 "llm_score": float(data.get("confidence", 0.5)),
                 "llm_label": data.get("label", "FAKE").upper(),
                 "llm_reasoning": data.get("reasoning", final_text),
+                "related_articles": related_articles,
+                "llm_tool_trace": tool_trace,
             }
             print(">>> [NODE] Finished LLM Classifier Node.")
             return result
@@ -104,6 +165,8 @@ After using the tools to gather sufficient evidence, output your final classific
                 "llm_label": "UNKNOWN",
                 "llm_reasoning": "Failed to parse final JSON output. Raw output:\n"
                 + final_text,
+                "related_articles": related_articles,
+                "llm_tool_trace": tool_trace,
             }
             print(">>> [NODE] Finished LLM Classifier Node.")
             return result
@@ -114,6 +177,8 @@ After using the tools to gather sufficient evidence, output your final classific
             "llm_score": 0.5,
             "llm_label": "FAKE",
             "llm_reasoning": f"Failed to perform LLM analysis: {str(e)}",
+            "related_articles": [],
+            "llm_tool_trace": [],
         }
         print(">>> [NODE] Finished LLM Classifier Node.")
         return result
