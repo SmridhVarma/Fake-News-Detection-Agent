@@ -28,7 +28,8 @@ def evaluator_node(state: AgentState) -> dict:
             criteria="Determine whether the reasoning logically follows from the provided article text and justifies the given label.",
             evaluation_params=[LLMTestCaseParams.INPUT, LLMTestCaseParams.ACTUAL_OUTPUT],
             model="gpt-4o-mini",
-            threshold=0.5
+            threshold=0.5,
+            model_kwargs={"temperature": 0.0},
         )
         
         test_case = LLMTestCase(
