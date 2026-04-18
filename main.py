@@ -676,7 +676,7 @@ import joblib
 def _load_dashboard_data():
     try:
         if not os.path.exists("./models/v2/training_artifacts.joblib"):
-            return [], "UNKNOWN"
+            return [], "UNKNOWN", "unknown"
         artifacts = joblib.load("./models/v2/training_artifacts.joblib")
         results = artifacts.get("candidate_validation_results", {})
         table_data = []
@@ -688,12 +688,13 @@ def _load_dashboard_data():
                 f"{metrics.get('recall', 0):.1%}",
                 f"{metrics.get('f1', 0):.1%}"
             ])
-        return table_data, artifacts.get("selected_model_name", "UNKNOWN").replace("_", " ").title()
+        raw_name = artifacts.get("selected_model_name", "unknown")
+        return table_data, raw_name.replace("_", " ").title(), raw_name
     except Exception as e:
         print(f"Failed to load dashboard data: {e}")
-        return [], "UNKNOWN"
+        return [], "UNKNOWN", "unknown"
 
-DASHBOARD_TABLE_DATA, BEST_MODEL_NAME = _load_dashboard_data()
+DASHBOARD_TABLE_DATA, BEST_MODEL_NAME, BEST_MODEL_RAW_NAME = _load_dashboard_data()
 
 
 with gr.Blocks(
@@ -817,7 +818,7 @@ with gr.Blocks(
                 )
                 with gr.Row():
                     gr.Image(value="evaluation_outputs/v2_detailed/roc_curve_comparison.png", label="ROC Curves (Test Dataset)", height=400)
-                    gr.Image(value="evaluation_outputs/v2_detailed/confusion_matrix_neural_network.png", label="Neural Network Confusion Matrix (Selected Model)", height=400)
+                    gr.Image(value=f"evaluation_outputs/v2_detailed/confusion_matrix_{BEST_MODEL_RAW_NAME}.png", label=f"{BEST_MODEL_NAME} Confusion Matrix (Selected Model)", height=400)
 
     submit_btn.click(
         fn=classify_article,
