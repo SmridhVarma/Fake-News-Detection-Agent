@@ -322,68 +322,7 @@ textarea:focus, input:focus {
 .example-btn.example-fake {
     border-left: 3px solid #ef4444 !important;
 }
-
-/* Model Trust card */
-.model-trust-card {
-    background: var(--background-fill-secondary);
-    border: 1px solid var(--border-color-primary);
-    border-radius: 10px;
-    padding: 12px 16px;
-    margin-bottom: 8px;
-}
-.model-trust-title {
-    font-size: 12px;
-    font-weight: 600;
-    text-transform: uppercase;
-    letter-spacing: 0.6px;
-    color: var(--body-text-color-subdued);
-    margin-bottom: 10px;
-}
-.model-trust-grid {
-    display: flex;
-    gap: 20px;
-    flex-wrap: wrap;
-    align-items: flex-start;
-}
-.model-trust-item {
-    display: flex;
-    flex-direction: column;
-    gap: 2px;
-    min-width: 72px;
-}
-.model-trust-label {
-    font-size: 11px;
-    color: var(--body-text-color-subdued);
-    font-weight: 500;
-    text-transform: uppercase;
-    letter-spacing: 0.4px;
-}
-.model-trust-value {
-    font-size: 15px;
-    font-weight: 700;
-    color: var(--body-text-color);
-}
 """
-
-
-def _build_model_trust_html(ml_weight=None, llm_weight=None) -> str:
-    """Return an HTML card showing selected model stats and aggregation weights."""
-    f1_str = f"{BEST_MODEL_F1:.1%}" if BEST_MODEL_F1 else "N/A"
-    auc_str = f"{BEST_MODEL_AUC:.3f}" if BEST_MODEL_AUC else "N/A"
-    ml_w = f"{ml_weight:.0%}" if ml_weight is not None else "—"
-    llm_w = f"{llm_weight:.0%}" if llm_weight is not None else "—"
-    return (
-        '<div class="model-trust-card">'
-        '<div class="model-trust-title">Model Trust</div>'
-        '<div class="model-trust-grid">'
-        f'<div class="model-trust-item"><span class="model-trust-label">ML Model</span><span class="model-trust-value">{BEST_MODEL_NAME}</span></div>'
-        f'<div class="model-trust-item"><span class="model-trust-label">Val F1</span><span class="model-trust-value">{f1_str}</span></div>'
-        f'<div class="model-trust-item"><span class="model-trust-label">AUC-ROC</span><span class="model-trust-value">{auc_str}</span></div>'
-        f'<div class="model-trust-item"><span class="model-trust-label">ML Weight</span><span class="model-trust-value">{ml_w}</span></div>'
-        f'<div class="model-trust-item"><span class="model-trust-label">LLM Weight</span><span class="model-trust-value">{llm_w}</span></div>'
-        '</div>'
-        '</div>'
-    )
 
 
 def _build_verdict_html(final_label: str, final_score: float) -> str:
@@ -460,7 +399,6 @@ def classify_article(text: str, url: str, active_input_type: str):
                     value="### Ready\n- Enter a news URL, then click Analyze Article",
                     elem_classes=["status-panel", "error-panel"],
                 ),
-                gr.update(),
             )
             raise gr.Error("URL tab is selected. Please enter a news URL to analyze.")
         input_type = "url"
@@ -477,7 +415,6 @@ def classify_article(text: str, url: str, active_input_type: str):
                     value="### Ready\n- Paste article text, then click Analyze Article",
                     elem_classes=["status-panel", "error-panel"],
                 ),
-                gr.update(),
             )
             raise gr.Error(
                 "Paste Article tab is selected. Please enter article text to analyze."
@@ -502,7 +439,6 @@ def classify_article(text: str, url: str, active_input_type: str):
             value=f"### Processing\n- Step 1/4: Input validated ({input_type.upper()})\n- Step 2/4: Pipeline started\n- {warmup_msg}",
             elem_classes=["status-panel"],
         ),
-        gr.update(),
     )
 
     try:
@@ -526,7 +462,6 @@ def classify_article(text: str, url: str, active_input_type: str):
                     value=f"### Error\n- Could not read content from the URL\n- The site may block automated access\n- **Try pasting the article text directly** in the 'Paste Article' tab\n- Detail: {err_msg}",
                     elem_classes=["status-panel", "error-panel"],
                 ),
-                gr.update(),
             )
         else:
             yield (
@@ -539,7 +474,6 @@ def classify_article(text: str, url: str, active_input_type: str):
                     value=f"### Error\n- Analysis failed\n- Detail: {err_msg}",
                     elem_classes=["status-panel", "error-panel"],
                 ),
-                gr.update(),
             )
         return
 
@@ -578,8 +512,6 @@ def classify_article(text: str, url: str, active_input_type: str):
     llm_score = result.get("llm_score", 0.0)
     eval_score = result.get("eval_score", 0.0)
     eval_agreement = result.get("eval_agreement", False)
-    ml_weight = result.get("ml_weight")
-    llm_weight = result.get("llm_weight")
 
     # Convert ML raw probability (P(REAL)) to confidence in the predicted label
     ml_confidence = ml_score if ml_label == "REAL" else 1 - ml_score
@@ -686,7 +618,6 @@ def classify_article(text: str, url: str, active_input_type: str):
         explanation,
         details_md,
         gr.update(value=status_md, elem_classes=["status-panel"]),
-        _build_model_trust_html(ml_weight, llm_weight),
     )
 
 
@@ -701,7 +632,6 @@ def _clear_results():
             value="### Ready\n- Enter article text or URL, then click Analyze Article",
             elem_classes=["status-panel"],
         ),
-        _build_model_trust_html(),
     )
 
 
@@ -744,10 +674,9 @@ theme = gr.themes.Soft(
 import joblib
 
 def _load_dashboard_data():
-    from PIL import Image as PILImage
     try:
         if not os.path.exists("./models/v2/training_artifacts.joblib"):
-            return [], "UNKNOWN", "unknown", 0.0, 0.0, None, None
+            return [], "UNKNOWN"
         artifacts = joblib.load("./models/v2/training_artifacts.joblib")
         results = artifacts.get("candidate_validation_results", {})
         table_data = []
@@ -759,20 +688,12 @@ def _load_dashboard_data():
                 f"{metrics.get('recall', 0):.1%}",
                 f"{metrics.get('f1', 0):.1%}"
             ])
-        raw_name = artifacts.get("selected_model_name", "unknown")
-        best_metrics = results.get(raw_name, {})
-        best_f1 = float(best_metrics.get("f1", 0.0))
-        best_auc = float(best_metrics.get("auc_roc", 0.0))
-        roc_path = "./evaluation_outputs/v2_detailed/roc_curve_comparison.png"
-        cm_path = f"./evaluation_outputs/v2_detailed/confusion_matrix_{raw_name}.png"
-        roc_img = PILImage.open(roc_path) if os.path.exists(roc_path) else None
-        cm_img = PILImage.open(cm_path) if os.path.exists(cm_path) else None
-        return table_data, raw_name.replace("_", " ").title(), raw_name, best_f1, best_auc, roc_img, cm_img
+        return table_data, artifacts.get("selected_model_name", "UNKNOWN").replace("_", " ").title()
     except Exception as e:
         print(f"Failed to load dashboard data: {e}")
-        return [], "UNKNOWN", "unknown", 0.0, 0.0, None, None
+        return [], "UNKNOWN"
 
-DASHBOARD_TABLE_DATA, BEST_MODEL_NAME, BEST_MODEL_RAW_NAME, BEST_MODEL_F1, BEST_MODEL_AUC, ROC_IMG, CM_IMG = _load_dashboard_data()
+DASHBOARD_TABLE_DATA, BEST_MODEL_NAME = _load_dashboard_data()
 
 
 with gr.Blocks(
@@ -868,8 +789,6 @@ with gr.Blocks(
                 elem_classes=["hide-label", "summary-box"],
             )
 
-            model_trust_output = gr.HTML(value=_build_model_trust_html())
-
             with gr.Accordion(
                 "Detailed Analysis", open=False, elem_classes="accordion-section"
             ):
@@ -897,8 +816,8 @@ with gr.Blocks(
                     interactive=False
                 )
                 with gr.Row():
-                    gr.Image(value=ROC_IMG, label="ROC Curves (Test Dataset)", height=400)
-                    gr.Image(value=CM_IMG, label=f"{BEST_MODEL_NAME} Confusion Matrix (Selected Model)", height=400)
+                    gr.Image(value="evaluation_outputs/v2_detailed/roc_curve_comparison.png", label="ROC Curves (Test Dataset)", height=400)
+                    gr.Image(value="evaluation_outputs/v2_detailed/confusion_matrix_neural_network.png", label="Neural Network Confusion Matrix (Selected Model)", height=400)
 
     submit_btn.click(
         fn=classify_article,
@@ -910,7 +829,6 @@ with gr.Blocks(
             explanation_output,
             details_output,
             status_output,
-            model_trust_output,
         ],
         show_progress="hidden",
     )
@@ -925,7 +843,6 @@ with gr.Blocks(
             explanation_output,
             details_output,
             status_output,
-            model_trust_output,
         ],
     )
 
