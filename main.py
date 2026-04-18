@@ -817,7 +817,7 @@ with gr.Blocks(
                 )
                 with gr.Row():
                     gr.Image(value="evaluation_outputs/v2_detailed/roc_curve_comparison.png", label="ROC Curves (Test Dataset)", height=400)
-                    gr.Image(value="evaluation_outputs/v2_detailed/confusion_matrix_svm.png", label="SVM Confusion Matrix (Selected Model)", height=400)
+                    gr.Image(value="evaluation_outputs/v2_detailed/confusion_matrix_neural_network.png", label="Neural Network Confusion Matrix (Selected Model)", height=400)
 
     submit_btn.click(
         fn=classify_article,
@@ -856,9 +856,6 @@ with gr.Blocks(
 
 if __name__ == "__main__":
     demo.launch(
-        share=False,
-        css=CUSTOM_CSS,
-        theme=theme,
-        inbrowser=True,
-        allowed_paths=["evaluation_outputs"],
+        share=True,
+                allowed_paths=["evaluation_outputs"],
     )

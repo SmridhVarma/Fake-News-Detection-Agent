@@ -1,4 +1,4 @@
 model,comparison,accuracy,precision,recall,f1,auc_roc
-svm,selected_model,0.9943,0.9957,0.9938,0.9947,0.9998
-svm,text_only,0.9918,0.9938,0.9909,0.9923,0.9996
-svm,text_plus_features,0.9943,0.9957,0.9938,0.9947,0.9998
+neural_network,selected_model,0.9941,0.9943,0.9947,0.9945,0.9998
+neural_network,text_only,0.9887,0.9895,0.9895,0.9895,0.9994
+neural_network,text_plus_features,0.9928,0.9957,0.9909,0.9933,0.9997

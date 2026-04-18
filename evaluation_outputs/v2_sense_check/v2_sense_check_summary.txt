@@ -3,7 +3,7 @@ Train rows: 27179
 Validation rows: 7765
 Test rows: 3884
 Preprocessing summary: {'raw_fake_rows': 23481, 'raw_true_rows': 21417, 'raw_total_rows': 44898, 'empty_rows_removed': 0, 'empty_key_rows_removed': 9, 'duplicate_rows_removed': 6061, 'final_rows_after_preprocessing': 38828, 'train_rows': 27179, 'val_rows': 7765, 'test_rows': 3884, 'train_class_proportions': {1: 0.5389823025129695, 0: 0.4610176974870304}, 'val_class_proportions': {1: 0.5389568576947843, 0: 0.4610431423052157}, 'test_class_proportions': {1: 0.53913491246138, 0: 0.46086508753862}}
-Similarity threshold counts: {'gt_0_95': 24, 'gt_0_98': 6, 'gt_0_99': 5}
+Similarity threshold counts: {'gt_0_95': 23, 'gt_0_98': 6, 'gt_0_99': 5}
 Top REAL indicators:
 president donald, wednesday, washington, thursday, tuesday, president barack, thats, reuters, london, friday, said statement, washington president, said, monday, im, said thursday, nov, showed, rival, there, factbox, ive, hillary clinton, he, said tuesday, dont, news conference, spokesman, twitter, representative
 Top FAKE indicators:

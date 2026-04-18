@@ -8,8 +8,7 @@ from scipy.sparse import hstack, csr_matrix
 
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.preprocessing import StandardScaler
-from sklearn.svm import LinearSVC
-from sklearn.calibration import CalibratedClassifierCV
+from sklearn.neural_network import MLPClassifier
 from sklearn.metrics import (
     accuracy_score,
     precision_score,
@@ -191,14 +190,21 @@ tfidf_text_only = TfidfVectorizer(
 X_train_text_only = tfidf_text_only.fit_transform(X_text_train)
 X_test_text_only = tfidf_text_only.transform(X_text_test)
 
-svm_text_only = CalibratedClassifierCV(
-    estimator=LinearSVC(random_state=42, dual="auto"),
-    cv=3
+nn_text_only = MLPClassifier(
+    hidden_layer_sizes=(256, 128),
+    activation="relu",
+    solver="adam",
+    alpha=1e-4,
+    batch_size=64,
+    learning_rate_init=1e-3,
+    max_iter=20,
+    early_stopping=True,
+    random_state=42,
 )
-svm_text_only.fit(X_train_text_only, y_train)
+nn_text_only.fit(X_train_text_only, y_train)
 
-y_pred_text_only = svm_text_only.predict(X_test_text_only)
-y_score_text_only = svm_text_only.predict_proba(X_test_text_only)[:, 1]
+y_pred_text_only = nn_text_only.predict(X_test_text_only)
+y_score_text_only = nn_text_only.predict_proba(X_test_text_only)[:, 1]
 
 text_only_metrics = compute_metrics(y_test, y_pred_text_only, y_score_text_only)
 
@@ -226,21 +232,28 @@ X_test_full_compare = hstack([
     csr_matrix(X_num_test_scaled),
 ])
 
-svm_full = CalibratedClassifierCV(
-    estimator=LinearSVC(random_state=42, dual="auto"),
-    cv=3
+nn_full = MLPClassifier(
+    hidden_layer_sizes=(256, 128),
+    activation="relu",
+    solver="adam",
+    alpha=1e-4,
+    batch_size=64,
+    learning_rate_init=1e-3,
+    max_iter=20,
+    early_stopping=True,
+    random_state=42,
 )
-svm_full.fit(X_train_full, y_train)
+nn_full.fit(X_train_full, y_train)
 
-y_pred_full = svm_full.predict(X_test_full_compare)
-y_score_full = svm_full.predict_proba(X_test_full_compare)[:, 1]
+y_pred_full = nn_full.predict(X_test_full_compare)
+y_score_full = nn_full.predict_proba(X_test_full_compare)[:, 1]
 
 full_metrics = compute_metrics(y_test, y_pred_full, y_score_full)
 
-print("\nText-only SVM metrics:")
+print("\nText-only Neural Network metrics:")
 print(text_only_metrics)
 
-print("\nText + handcrafted features SVM metrics:")
+print("\nText + handcrafted features Neural Network metrics:")
 print(full_metrics)
 
 # =========================
@@ -248,8 +261,8 @@ print(full_metrics)
 # =========================
 metrics_rows = [
     {"model": selected_model_name, "comparison": "selected_model", **selected_metrics},
-    {"model": "svm", "comparison": "text_only", **text_only_metrics},
-    {"model": "svm", "comparison": "text_plus_features", **full_metrics},
+    {"model": "neural_network", "comparison": "text_only", **text_only_metrics},
+    {"model": "neural_network", "comparison": "text_plus_features", **full_metrics},
 ]
 
 metrics_df = pd.DataFrame(metrics_rows)
@@ -277,9 +290,9 @@ with open(summary_txt_path, "w", encoding="utf-8") as f:
     f.write(str(cm))
     f.write("\n\nClassification report:\n")
     f.write(report_text)
-    f.write("\n\nText-only SVM metrics:\n")
+    f.write("\n\nText-only Neural Network metrics:\n")
     f.write(str(text_only_metrics))
-    f.write("\n\nText + handcrafted features SVM metrics:\n")
+    f.write("\n\nText + handcrafted features Neural Network metrics:\n")
     f.write(str(full_metrics))
 
 print(f"\nSaved metrics CSV to: {metrics_csv_path}")

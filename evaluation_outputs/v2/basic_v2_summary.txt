@@ -1,8 +1,8 @@
 === BASIC V2 SUMMARY ===
 
-Selected model: svm
-Validation metrics: {'accuracy': 0.9916, 'precision': 0.9905, 'recall': 0.994, 'f1': 0.9922, 'auc_roc': 0.9992}
-Test metrics: {'accuracy': 0.9943, 'precision': 0.9957, 'recall': 0.9938, 'f1': 0.9947, 'auc_roc': 0.9998}
+Selected model: neural_network
+Validation metrics: {'accuracy': 0.992, 'precision': 0.9907, 'recall': 0.9945, 'f1': 0.9926, 'auc_roc': np.float64(0.9993)}
+Test metrics: {'accuracy': 0.9941, 'precision': 0.9943, 'recall': 0.9947, 'f1': 0.9945, 'auc_roc': np.float64(0.9998)}
 
 Majority baseline accuracy: 0.5391
 
@@ -10,22 +10,22 @@ Preprocessing summary:
 {'raw_fake_rows': 23481, 'raw_true_rows': 21417, 'raw_total_rows': 44898, 'empty_rows_removed': 0, 'empty_key_rows_removed': 9, 'duplicate_rows_removed': 6061, 'final_rows_after_preprocessing': 38828, 'train_rows': 27179, 'val_rows': 7765, 'test_rows': 3884, 'train_class_proportions': {1: 0.5389823025129695, 0: 0.4610176974870304}, 'val_class_proportions': {1: 0.5389568576947843, 0: 0.4610431423052157}, 'test_class_proportions': {1: 0.53913491246138, 0: 0.46086508753862}}
 
 Confusion matrix:
-[[1781    9]
- [  13 2081]]
+[[1778   12]
+ [  11 2083]]
 
 Classification report:
               precision    recall  f1-score   support
 
-           0     0.9928    0.9950    0.9939      1790
-           1     0.9957    0.9938    0.9947      2094
+           0     0.9939    0.9933    0.9936      1790
+           1     0.9943    0.9947    0.9945      2094
 
-    accuracy                         0.9943      3884
-   macro avg     0.9942    0.9944    0.9943      3884
-weighted avg     0.9943    0.9943    0.9943      3884
+    accuracy                         0.9941      3884
+   macro avg     0.9941    0.9940    0.9940      3884
+weighted avg     0.9941    0.9941    0.9941      3884
 
 
-Text-only SVM metrics:
-{'accuracy': 0.9918, 'precision': 0.9938, 'recall': 0.9909, 'f1': 0.9923, 'auc_roc': 0.9996}
+Text-only NN metrics:
+{'accuracy': 0.9887, 'precision': 0.9895, 'recall': 0.9895, 'f1': 0.9895, 'auc_roc': 0.9994}
 
-Text + handcrafted features SVM metrics:
-{'accuracy': 0.9943, 'precision': 0.9957, 'recall': 0.9938, 'f1': 0.9947, 'auc_roc': 0.9998}
+Text + handcrafted features NN metrics:
+{'accuracy': 0.9928, 'precision': 0.9957, 'recall': 0.9909, 'f1': 0.9933, 'auc_roc': 0.9997}
